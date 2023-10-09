@@ -9,13 +9,13 @@ Contact:
 
 
 ## Glossary
-1) Installation
+1) [Installation](#Installation)
 2) Download recorded data from Esmaeli et al. 2021
 3) Generate simpler artificial data
 4) Load pre-trained models
 5) Code snippet for computing the trial-matching loss function
 6) Generate paper figures
-7) Train the RSNN
+7) [Train the RSNN](#training_the_RSNN_model)
 
 ## Installation
 We suggest installing the code with conda and you can do this with the following way:
