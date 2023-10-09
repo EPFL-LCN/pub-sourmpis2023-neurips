@@ -7,20 +7,15 @@ C. Sourmpis, C. Petersen, W. Gerstner & G. Bellec
 Contact:
 [christos.sourmpis@epfl.ch](mailto:christos.sourmpis@epfl.ch)
 
-The code is sufficient in order to generate all the figures of the paper, and the code to generate the figures of the main text is contained in notebooks in the folder Figures.
 
-In order to run the code you need to do 2 main steps before:
-1. Install this code as a module in python
-2. Download the data (for the recorded data) and generate the data (for the artificial dataset)
-
-Now you are ready to run the code to generate the figures.
-
-Training models will require a little bit better understanding of the code, HOWEVER you can train the main model with the following command, and you could start exploring the parameters, by changing the options in the file configs/main_model/opt.json:
-
-```bash
-python3 infopath/train.py --config=main_model
-```
-The previous command is suppoded to be run on GPU. Be careful that this training will require GPU RAM of at least 40GB. If you want to run it with CPU, you can change the field "device" in the configs/main_model/opt.json.
+## Glossary
+1) Installation
+2) Download recorded data from Esmaeli et al. 2021
+3) Generate simpler artificial data
+4) Load pre-trained models
+5) Code snippet for computing the trial-matching loss function
+6) Generate paper figures
+7) Train the RSNN
 
 ## Installation
 We suggest installing the code with conda and you can do this with the following way:
@@ -31,8 +26,7 @@ pip install -e .
 ```
 Now you should be able to run the code.
 
-## Data
-### Recorded data
+## Download recorded data
 Be aware that the full data are ~55GB, but in the end we will use only ~500MB.
 
 In order to use the recorded data you either can do it manually 
@@ -50,14 +44,54 @@ mv tmp/Electrophysiology/Data/spikeData_v9.mat datasets/spikeData_v9.mat
 rm -r tmp
 ```
 
-### Artificial data
+## Generate Artificial data
 For the artificial data just run the command:
 ```bash
 python datasets/pseudodata.py
 ```
 This will generate the data for the figure 2. In order to get the data for the supplementary you need to modify the pseudodata.py file.
 
+## Pre-trained models 
 
+One can load a pre-trained model as follows.
+
+```python
+from infopath.model_loader import load_model_and_optimizer
+
+log_path = "log_dir/train_models/main_model/"
+opt = load_training_opt(log_path)
+opt.log_path = log_path
+opt.device = "cpu"
+model = load_model_and_optimizer(opt, reload=True, last_best="last")[0]
+```
+
+For instance the recurrent weights of the model can be obtained with:
+```python
+model.rsnn._w_rec # shape: 2 x 1500 x 1500
+```
+
+To simulate a raster of 400 trials from the model one can do:
+```python
+stims = torch.randint(2, size=(400,)) # binary vector of conditions (absence or presence of whisker stimulation)
+spikes, voltages, jaw, state = model(stims) # generation of the input spikes and simulation of the RSNN
+```
+
+## Compute the trial matching loss-function
+
+
+
+## Generate figures from a pre-trained model
+
+The code is sufficient in order to generate all the figures of the paper, in the folder `Figures` one can find the paper figures and notebooks to generate all the panels.
+
+## Training the RSNN model
+
+Training models will require a little bit better understanding of the code, HOWEVER you can train the main model with the following command, and you could start exploring the parameters, by changing the options in the file configs/main_model/opt.json:
+
+```bash
+python3 infopath/train.py --config=main_model
+```
+The previous command is suppoded to be run on GPU. Be careful that this training will require GPU RAM of at least 40GB. If you want to run it with CPU, you can change the field "device" in the configs/main_model/opt.json.
 
 ### Notes
 For the Figure 4C you might notice that the UMAP is not the same as the one with the paper, this happens because we changed the function that generates the input spikes for readability. However, you can appreciate that the message of the main paper remains the same.
