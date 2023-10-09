@@ -1,0 +1,286 @@
+diff --git a/infopath/config.py b/infopath/config.py
+index 6909dcc..32bd82e 100644
+--- a/infopath/config.py
++++ b/infopath/config.py
+@@ -305,7 +305,7 @@ def get_default_opt():
+         "motor_areas": [],
+         "jaw_neurons": 100,
+         "jaw_delay": 40,
+-        "jaw_min_delay": 0,
++        "jaw_min_delay": 12,
+         "tau_jaw": 100,
+         "mean_fr": 5,
+         "jaw_version": 0,
+@@ -324,6 +324,8 @@ def get_default_opt():
+         "motor_buffer_size": 40,
+         "jaw_tongue": 1,
+         "jaw_nonlinear": False,
++        "scaling_jaw_in_model": False,
++        "balance_trial_types": True,
+     }
+ 
+     default["time"] = time.ctime()
+@@ -352,7 +354,7 @@ opt.areas = ["wS1", "mPFC"]
+ opt.num_areas = len(opt.areas)
+ opt.inter_delay = 50
+ opt.only_stim = 4
+-opt.stim = [4]
++opt.stim = [1]
+ opt.transmission_fail = [1.0, 1.0]
+ opt.varied_delay = 0
+ 
+@@ -370,16 +372,16 @@ opt.change_mapping = 1
+ 
+ # # PseudoData
+ def config_pseudodata(opt):
+-    opt.datapath = "./datasets/PseudoData_v15_variation10ms"
++    opt.datapath = "./datasets/PseudoData_v16_variation1ms"
+     opt.areas = ["wS1", "mPFC"]
+     opt.stim = [4]
+     opt.num_areas = len(opt.areas)
+ 
+-    opt.n_units = 400
++    opt.n_units = 500
+     opt.n_rnn_in = 200
+     opt.load_version = 2
+     opt.start, opt.stop = -0.1, 0.3
+-    opt.batch_size = 200
++    opt.batch_size = 150
+     opt.batch_size_data = 200
+     opt.no_inter_intra = True
+     opt.train_bias = True
+@@ -387,19 +389,19 @@ def config_pseudodata(opt):
+     opt.train_adaptation = False
+     opt.prop_adaptive = 0.0
+     opt.noise_level_list = [0.1 for i in range(len(opt.areas))]
+-    opt.input_f0 = 10
++    opt.input_f0 = 5
+     # opt.lsnn_version = "srm"
+     opt.lsnn_version = "simplified"
+     opt.l1_decay = 0.0
+-    opt.thalamic_delay = 0.005  # * (opt.lsnn_version != "srm")
+-    opt.tau_list = [20 for i in range(opt.num_areas)]
++    opt.thalamic_delay = 0.004  # * (opt.lsnn_version != "srm")
++    opt.tau_list = [10 for i in range(opt.num_areas)]
+     opt.exc_inh_tau_mem_ratio = 3.0
+ 
+     opt.restrict_inter_area_inh = True
+-    opt.dt = 4
++    opt.dt = 2
+     opt.n_delay = 4
+-    opt.inter_delay = 8
+-    opt.rec_groups = 2
++    opt.inter_delay = 4
++    opt.rec_groups = 1
+     opt.input_filter_size = 1
+     opt.spike_filter_std = 12  # miliseconds # int(spike_filter_std / opt.dt)
+ 
+@@ -408,12 +410,12 @@ def config_pseudodata(opt):
+     opt.trial_matching = True
+     opt.loss_trial_wise = 1
+     opt.loss_neuron_wise = 1
+-    opt.loss_cross_corr = 1
++    opt.loss_cross_corr = 0
+     opt.coeff_loss = 10
+     opt.coeff_firing_rate_distro_reg = 0.0
+-    opt.coeff_trial_loss = 10000
++    opt.coeff_trial_loss = 100
+     opt.coeff_cross_corr_loss = 0.0
+-    opt.early_stop = 6000
++    opt.early_stop = 8000
+     opt.coeff_trial_fr_loss = 0.0
+     opt.loss_firing_rate = 0
+ 
+@@ -422,36 +424,38 @@ def config_pseudodata(opt):
+ 
+     opt.keep_all_input = 1
+     opt.change_mapping = 0
+-    opt.only_miss_hit = 2
++    opt.only_miss_hit = 4
+     opt.lr = 5e-4
+     opt.p_exc = 0.8
+     opt.transmission_fail = [1.0 for i in range(opt.num_areas)]
+-    opt.input_timesteps = 2
++    opt.input_timesteps = 1
+     opt.trial_loss_area_specific = True
+-    opt.geometric_loss = True
+-    opt.resample = 10
++    opt.geometric_loss = False
++    opt.resample = 4
+     opt.new_version = True
+ 
+     opt.motor_areas = []
+     opt.jaw_neurons = 100
+     opt.jaw_delay = 40
+     opt.tau_jaw = 50
+-    opt.mean_fr = 10
++    opt.mean_fr = 5
+     opt.jaw_version = 1
+ 
+     opt.gan_loss = False
+-    opt.conductance_based = True
++    opt.conductance_based = False
+     opt.gan_hidden_neurons = 128
+     # opt.spike_function = "deterministic"
+     opt.trial_types = [0, 1]
+     opt.pca_features = False
+     opt.n_pca_comp = 5
+-    opt.latent_new = True
++    opt.latent_new = False
+     opt.with_behaviour = False
+     opt.loss_trial_type = False
+     opt.with_task_splitter = True
+-
+-    opt.session_based = False
++    opt.temperature = 15
++    opt.session_based = True
++    opt.stim_valance *= 2.3
++    opt.balance_trial_types = False
+     return opt
+ 
+ 
+@@ -546,8 +550,8 @@ def config_vahid(opt):
+     return opt
+ 
+ 
+-# opt = config_pseudodata(opt)
+-opt = config_vahid(opt)
++opt = config_pseudodata(opt)
++# opt = config_vahid(opt)
+ 
+ # # Anastasiia
+ # opt.lsnn_version = "simplified"
+diff --git a/infopath/model_loader_gan_with_jaw.py b/infopath/model_loader_gan_with_jaw.py
+index b7d7372..a2c34c2 100644
+--- a/infopath/model_loader_gan_with_jaw.py
++++ b/infopath/model_loader_gan_with_jaw.py
+@@ -591,9 +591,12 @@ class FullModel(nn.Module):
+             state,
+             sample_trial_noise=False,
+         )
+-        model_jaw = (model_jaw[0] - self.jaw_mean) / self.jaw_std
+-        if self.opt.jaw_nonlinear:
+-            model_jaw = torch.exp(model_jaw) - 1
++        if not opt.scaling_jaw_in_model:
++            model_jaw = (model_jaw[0] - self.jaw_mean) / self.jaw_std
++            if self.opt.jaw_nonlinear:
++                model_jaw = torch.exp(model_jaw) - 1
++        else:
++            model_jaw = model_jaw[0]
+         return spike_outputs[0], voltages[0], model_jaw, state
+ 
+     def generator_loss(
+diff --git a/infopath/train_GAN_with_behaviour.py b/infopath/train_GAN_with_behaviour.py
+index 3cd5869..db5fa7a 100644
+--- a/infopath/train_GAN_with_behaviour.py
++++ b/infopath/train_GAN_with_behaviour.py
+@@ -168,9 +168,12 @@ def train(opt, model, netD, optimizerG, optimizerD, step=-1):
+         data_spikes1 = all_data_spikes[index]
+         data_jaw1 = all_data_jaw[index]
+         session_info1 = all_session_info[index]
+-        data_spikes, data_jaw, session_info = balance_trial_type(
+-            data_spikes1, data_jaw1, session_info1, all_data_perc[index], seed=0
+-        )
++        if opt.balance_trial_types:
++            data_spikes, data_jaw, session_info = balance_trial_type(
++                data_spikes1, data_jaw1, session_info1, all_data_perc[index]
++            )
++        else:
++            data_spikes, data_jaw, session_info = data_spikes1, data_jaw1, session_info1
+         # make stims with same distro as the data
+         fix_random = False
+         if fix_random:
+@@ -605,6 +608,7 @@ if __name__ == "__main__":
+         opt = get_opt()
+     else:
+         opt = get_opt(os.path.join("configs", pars.config))
++    # opt = get_opt(os.path.join("configs", "classic_splitter_nocross_nonlinear"))
+ 
+     import warnings
+ 
+diff --git a/infopath/trial_loader.py b/infopath/trial_loader.py
+index 16180c4..5c4424a 100644
+--- a/infopath/trial_loader.py
++++ b/infopath/trial_loader.py
+@@ -375,7 +375,7 @@ class TrialDataset(Dataset):
+                     tmp = self.jaw[:, indices][..., session].to(device)
+                 elif jaw_tongue == 2:
+                     tmp = self.tongue[:, indices][..., session].to(device)
+-                jaw_train_tt[:, :trials, session] = tmp #- tmp[:self.start].mean(0)
++                jaw_train_tt[:, :trials, session] = tmp - tmp[: self.start].mean(0)
+             for i in range(len(self.session_info) - 1):
+                 new_session_info[i].append(self.session_info[i][session][indices])
+         return spikes_train_tt, spikes_train_tt_pre, jaw_train_tt, new_session_info
+diff --git a/models/EI_LSNN_simplified_with_behaviour0.py b/models/EI_LSNN_simplified_with_behaviour0.py
+index ed83c8d..b85fb05 100644
+--- a/models/EI_LSNN_simplified_with_behaviour0.py
++++ b/models/EI_LSNN_simplified_with_behaviour0.py
+@@ -64,6 +64,7 @@ class LSNNCell(nn.Module):
+         mean_fr=5,
+         latent_new=False,
+         jaw_open_loop=False,
++        scaling_jaw_in_model=False,
+     ):
+         """Run conductanced-based LIF neurons with synaptic delays
+ 
+@@ -109,6 +110,7 @@ class LSNNCell(nn.Module):
+         self.hidden_size = hidden_size
+         self.prop_light = prop_light
+         self.thr = thr
++        self.scaling_jaw_in_model = scaling_jaw_in_model
+         # the convention is that we always start with excitatory
+         self.excitatory = int(p_exc * hidden_size)
+         self.inhibitory = hidden_size - self.excitatory
+@@ -154,8 +156,9 @@ class LSNNCell(nn.Module):
+             self.conv = torch.nn.Conv1d(
+                 1, self.hidden_size, kernel_size=self.jaw_kernel, bias=False
+             )
++            self._w_jaw_pre.data *= 10
+             self.conv.weight.data = self._w_jaw_post[None].permute(2, 0, 1)
+-
++            self.jaw_bias = Parameter(torch.ones(1))
+         weights_in, mask_in, _, _, (n_exc, n_inh) = self.make_input_weight_matrix(
+             self.input_size, p_inpe, p_inpi, p_exc, keep_all_input
+         )
+@@ -262,6 +265,10 @@ class LSNNCell(nn.Module):
+         else:
+             trial_offset_init = torch.zeros(latent_space, hidden_size)
+             self.register_buffer("trial_offset", trial_offset_init)
++        # self.guill_offset = True
++        # if self.guill_offset:
++        #     self.latent_space = hidden_size
++        #     self.guill_sigma = Parameter(torch.ones(hidden_size) / latent_space**0.5)
+ 
+     def init_population_indices(self):
+         num_areas = self.num_areas
+@@ -629,6 +636,8 @@ class LSNNCell(nn.Module):
+                 torch.relu(self.lin_tr_offset(self.trial_noise))
+             )
+             self.trial_noise_ready = fun_var
++        # elif self.guill_offset:
++        #     self.trial_noise_ready = self.trial_noise * self.guill_sigma
+         else:
+             self.trial_noise_ready = self.trial_noise @ self.trial_offset
+         # if self.motor_areas.shape[0] > 0:
+@@ -717,7 +726,12 @@ class LSNNCell(nn.Module):
+             dt = self.dt
+             inp = z[:, :, self.motor_area_index] / dt
+             inp = inp @ self._w_jaw_pre
+-            j = self.decay_jaw * jaw_buffer[-1] + (1 - self.decay_jaw) * inp
++            jpre = jaw_buffer[-1]
++            if self.scaling_jaw_in_model:
++                jpre = torch.log(jpre + self.jaw_bias)
++            j = self.decay_jaw * jpre + (1 - self.decay_jaw) * inp
++            if self.scaling_jaw_in_model:
++                j = torch.exp(j) - self.jaw_bias
+             jaw_buffer = torch.cat([jaw_buffer[1:], j])
+         return jaw_buffer
+ 
+@@ -784,6 +798,7 @@ class LSNNMultiLayerSimplified(nn.Module):
+                 temperature=opt.temperature,
+                 latent_new=opt.latent_new,
+                 jaw_open_loop=opt.jaw_open_loop,
++                scaling_jaw_in_model=opt.scaling_jaw_in_model,
+             )
+             self.cells.append(cell)
+ 
