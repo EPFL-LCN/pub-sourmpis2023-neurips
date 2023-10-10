@@ -15,7 +15,7 @@ Contact:
 4) Load pre-trained models
 5) Code snippet for computing the trial-matching loss function
 6) Generate paper figures
-7) [Training the RSNN](#Training_the_RSNN_model)
+7) [Training the RSNN](#training-the-rsnn-model)
 
 ## Installation
 We suggest installing the code with conda and you can do this with the following way:
