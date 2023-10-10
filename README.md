@@ -57,8 +57,9 @@ One can load a pre-trained model as follows.
 
 ```python
 from infopath.model_loader import load_model_and_optimizer
+from infopath.config import load_training_opt
 
-log_path = "log_dir/train_models/main_model/"
+log_path = "log_dir/trained_models/main_model/"
 opt = load_training_opt(log_path)
 opt.log_path = log_path
 opt.device = "cpu"
@@ -72,8 +73,9 @@ model.rsnn._w_rec # shape: 2 x 1500 x 1500
 
 To simulate a raster of 400 trials from the model one can do:
 ```python
-stims = torch.randint(2, size=(400,)) # binary vector of conditions (absence or presence of whisker stimulation)
-spikes, voltages, jaw, state = model(stims) # generation of the input spikes and simulation of the RSNN
+with torch.no_grad():
+    stims = torch.randint(2, size=(400,)) # binary vector of conditions (absence or presence of whisker stimulation)
+    spikes, voltages, jaw, state = model(stims) # generation of the input spikes and simulation of the RSNN
 ```
 
 ## Compute the trial matching loss-function

@@ -4,4 +4,4 @@ datasets/PseudoData*
 datasets/spikeData_v9.mat
 **__pycache__**
 rsnn.egg-info*
-.DS_Store
+**.DS_Store

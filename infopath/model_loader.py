@@ -123,6 +123,7 @@ class FullModel(nn.Module):
         return spike_outputs, voltages, model_jaw, state
 
     def forward(self, stims):
+        self.opt.batch_size = stims.shape[0]
         state = self.steady_state()
         input_spikes = self.input_spikes(stims)
         self.rsnn.sample_mem_noise(self.T, stims.shape[0])

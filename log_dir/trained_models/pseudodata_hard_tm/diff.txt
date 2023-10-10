@@ -1,0 +1,1246 @@
+diff --git a/infopath/config.py b/infopath/config.py
+index 6909dcc..3c7593f 100644
+--- a/infopath/config.py
++++ b/infopath/config.py
+@@ -104,18 +104,10 @@ def get_default_opt():
+         "datapath": "./datasets",
+         # Device to use {either cpu or cuda:0}
+         "device": "cuda:0" if torch.cuda.is_available() else "cpu",
+-        # number of epochs
+-        "n_epochs": 100,
+         # how often to log
+         "log_every_n_steps": 50,
+-        # how often to print
+-        "print_every_n_steps": 50,
+-        # workers for the dataloader
+-        "num_workers": 16,
+         # batch size
+         "batch_size": 50,
+-        # batch size for the data
+-        "batch_size_data": None,
+         # learning rate
+         "lr": 0.0003,
+         # weight decay
+@@ -124,22 +116,12 @@ def get_default_opt():
+         "l1_decay": 0.01,
+         #  how many neurons
+         "n_units": 300,
+-        # how many layers
+-        "n_layer": 1,
+-        # if eprop or not (not implemented)
+-        "eprop": False,
+         # what kind of rnn
+         "rnn_type": "rsnn",
+-        # general firing rate regualarization (deprecated)
+-        "regularization_firing_rate": 0.0,
+-        # if to use voltage regularization
+-        "coeff_voltage_reg": 0.0,
+         # Name of task (for readable logs)
+         "task": "brain_encoding",
+         # Number of training steps
+         "n_steps": 100000,
+-        # duration of trial in seconds
+-        "trial_length": 2.0,
+         # start in seconds relative to onset
+         "start": -0.1,
+         # stop in seconds relative to onset
+@@ -160,17 +142,12 @@ def get_default_opt():
+         "scale_fun": "log",
+         # valance of the stimulus, multiplier of scale_fun
+         "stim_valance": 5,
+-        # TODO these need to be removed eventually
+-        "multi_trial_train": 0,
+-        "mixed_non_random": 1,
+         # how impact has the regularization from firing rate distribution
+         "coeff_firing_rate_distro_reg": 1.0,
+         # how impact has the main loss to the total loss
+         "coeff_loss": 1.0,
+         # if the spike inputs are seeded else random
+         "input_seed": 0,
+-        # how strong is the membrane potential noise
+-        "noise_level": 0.12,
+         # how strong is the membrane potential noise, in each area
+         "noise_level_list": [0.16, 0.16, 0.16],
+         # timeconstant of membrane potential of areas in ms
+@@ -179,36 +156,14 @@ def get_default_opt():
+         "tau_syn_list": [2.0, 2.0, 2.0],
+         # timeconstant of adaptative threshold in ms
+         "tau_adaptation": 144.0,
+-        # True the noise goes to threshold else goes to membrane
+-        "flag_soft_thr": 0,
+-        # number of excitatory and inhibitory groups, for model_grouped
+-        "groups": [2, 2],
+         # name of areas
+         "areas": ["wS1", "mPFC", "tjM1"],
+-        # name of area
+-        "area": "wS1",
+         # delay from input to rnn in seconds
+         "thalamic_delay": 0.005,
+-        # if the plot function in train uses cpu or gpu
+-        "transfer_cpu": 0,
+-        # if 0 only miss train if 1 only hit if 2 both
+-        "only_miss_hit": 1,
+-        # percentage of neurons with metabotropics receptor
+-        "metabotropic": 0.0,
+-        # timeconstant of metabotropic receptor
+-        "tau_meta": 1000.0,
+-        # probability the synapses of a neuron are mainly nmda driven
+-        "prop_nmda": 0.0,
+         # synaptic delay for intra area
+         "n_delay": 5,
+         # synaptic delay for inter area
+         "inter_delay": 5,
+-        # if clamp the output of some neurons goes to ground truth else no
+-        "clamp": 0,
+-        # if same_session_batch the batch has the same session else the batch has several sessions from the ones possible
+-        "same_session_batch": 1,
+-        # if stim > 4 or stim < 0 then stim is random from 1, 4 else only_stim
+-        "only_stim": 5,
+         # more readable way to set stim
+         "stim": [1, 2, 3, 4],
+         # gauss std for filtering spikes beforer loss calculation in ms
+@@ -217,9 +172,6 @@ def get_default_opt():
+         "input_with_state": 0,
+         # if verbose print all messages else no
+         "verbose": 1,
+-        # min and max time for refresh the state with the ground truth
+-        "min_step": 5,
+-        "max_step": 5,
+         # percentage of hidden neurons(neurons that do not correspond to recordings)
+         "hidden_perc": 0.2,
+         # if train_per_group average per area and exc/inh population and then calculate loss else no average
+@@ -305,7 +257,7 @@ def get_default_opt():
+         "motor_areas": [],
+         "jaw_neurons": 100,
+         "jaw_delay": 40,
+-        "jaw_min_delay": 0,
++        "jaw_min_delay": 12,
+         "tau_jaw": 100,
+         "mean_fr": 5,
+         "jaw_version": 0,
+@@ -324,6 +276,11 @@ def get_default_opt():
+         "motor_buffer_size": 40,
+         "jaw_tongue": 1,
+         "jaw_nonlinear": False,
++        "scaling_jaw_in_model": False,
++        "balance_trial_types": True,
++        "tpop_gan": True,
++        "loss_trial_matched_mle": False,
++        "use_logits": False,
+     }
+ 
+     default["time"] = time.ctime()
+@@ -351,8 +308,7 @@ opt.flag_soft_thr = 0
+ opt.areas = ["wS1", "mPFC"]
+ opt.num_areas = len(opt.areas)
+ opt.inter_delay = 50
+-opt.only_stim = 4
+-opt.stim = [4]
++opt.stim = [1]
+ opt.transmission_fail = [1.0, 1.0]
+ opt.varied_delay = 0
+ 
+@@ -364,94 +320,95 @@ opt.start = -0.2
+ opt.stop = 0.6
+ opt.coeff_loss = 1
+ opt.coeff_firing_rate_distro_reg = 1
+-opt.only_stim = 4
+ opt.tau_adaptation = 500.0
+ opt.change_mapping = 1
+ 
+ # # PseudoData
+ def config_pseudodata(opt):
+-    opt.datapath = "./datasets/PseudoData_v15_variation10ms"
++    opt.datapath = "./datasets/PseudoData_v16_variation1ms"
+     opt.areas = ["wS1", "mPFC"]
+     opt.stim = [4]
+     opt.num_areas = len(opt.areas)
+ 
+-    opt.n_units = 400
++    opt.n_units = 500
+     opt.n_rnn_in = 200
+     opt.load_version = 2
+     opt.start, opt.stop = -0.1, 0.3
+     opt.batch_size = 200
+-    opt.batch_size_data = 200
+     opt.no_inter_intra = True
+     opt.train_bias = True
+     opt.train_noise_bias = False
+     opt.train_adaptation = False
+     opt.prop_adaptive = 0.0
+     opt.noise_level_list = [0.1 for i in range(len(opt.areas))]
+-    opt.input_f0 = 10
++    opt.input_f0 = 5
+     # opt.lsnn_version = "srm"
+     opt.lsnn_version = "simplified"
+-    opt.l1_decay = 0.0
+-    opt.thalamic_delay = 0.005  # * (opt.lsnn_version != "srm")
+-    opt.tau_list = [20 for i in range(opt.num_areas)]
++    opt.thalamic_delay = 0.004  # * (opt.lsnn_version != "srm")
++    opt.tau_list = [10 for i in range(opt.num_areas)]
+     opt.exc_inh_tau_mem_ratio = 3.0
+ 
+     opt.restrict_inter_area_inh = True
+-    opt.dt = 4
++    opt.dt = 2
+     opt.n_delay = 4
+-    opt.inter_delay = 8
+-    opt.rec_groups = 2
++    opt.inter_delay = 4
++    opt.rec_groups = 1
+     opt.input_filter_size = 1
+     opt.spike_filter_std = 12  # miliseconds # int(spike_filter_std / opt.dt)
+ 
+-    opt.trial_offset = False
++    opt.trial_offset = True
+     opt.latent_space = 5
++    opt.latent_new = False
+     opt.trial_matching = True
++    opt.gan_loss = False
++    opt.tpop_gan = False
++    opt.loss_trial_matched_mle = 0
+     opt.loss_trial_wise = 1
+     opt.loss_neuron_wise = 1
+-    opt.loss_cross_corr = 1
++    opt.loss_cross_corr = 0
+     opt.coeff_loss = 10
+     opt.coeff_firing_rate_distro_reg = 0.0
+-    opt.coeff_trial_loss = 10000
++    opt.coeff_trial_loss = 20
+     opt.coeff_cross_corr_loss = 0.0
+-    opt.early_stop = 6000
++    opt.early_stop = 8000
+     opt.coeff_trial_fr_loss = 0.0
+     opt.loss_firing_rate = 0
+ 
+-    opt.w_decay = 0.0
+-    opt.l1_decay = 0.01
++    opt.w_decay = 0.01
++    opt.l1_decay = 0.0
+ 
+     opt.keep_all_input = 1
+     opt.change_mapping = 0
+-    opt.only_miss_hit = 2
+     opt.lr = 5e-4
+     opt.p_exc = 0.8
+     opt.transmission_fail = [1.0 for i in range(opt.num_areas)]
+-    opt.input_timesteps = 2
++    opt.input_timesteps = 1
+     opt.trial_loss_area_specific = True
+-    opt.geometric_loss = True
+-    opt.resample = 10
++    opt.geometric_loss = False
++    opt.resample = 4
+     opt.new_version = True
+ 
+     opt.motor_areas = []
+     opt.jaw_neurons = 100
+     opt.jaw_delay = 40
+     opt.tau_jaw = 50
+-    opt.mean_fr = 10
++    opt.mean_fr = 5
+     opt.jaw_version = 1
+ 
+-    opt.gan_loss = False
+-    opt.conductance_based = True
++    opt.conductance_based = False
+     opt.gan_hidden_neurons = 128
+     # opt.spike_function = "deterministic"
+     opt.trial_types = [0, 1]
+     opt.pca_features = False
+     opt.n_pca_comp = 5
+-    opt.latent_new = True
+     opt.with_behaviour = False
+     opt.loss_trial_type = False
+     opt.with_task_splitter = True
+-
+-    opt.session_based = False
++    opt.temperature = 5
++    opt.session_based = True
++    opt.stim_valance *= 2.3
++    opt.balance_trial_types = True
++    opt.use_logits = False
+     return opt
+ 
+ 
+@@ -462,7 +419,7 @@ def config_vahid(opt):
+     opt.num_areas = len(opt.areas)
+     opt.stim = [0, 1]
+     opt.stim_valance *= 2.3
+-    opt.n_units = 1500
++    opt.n_units = 500
+     opt.n_rnn_in = 300
+     opt.start, opt.stop = -0.2, 1.2
+     opt.load_version = 2
+@@ -483,11 +440,9 @@ def config_vahid(opt):
+     opt.lsnn_version = "simplified"
+     opt.thalamic_delay = 0.004  # * (opt.lsnn_version != "srm")
+     opt.early_stop = 8000
+-    opt.lr = 5e-4
++    opt.lr = 1e-3
+     opt.p_exc = 0.8
+     opt.batch_size = 150
+-    opt.batch_size_data = 200
+-    opt.only_miss_hit = 4
+ 
+     opt.loss_neuron_wise = 1
+     opt.loss_cross_corr = 0
+@@ -508,8 +463,8 @@ def config_vahid(opt):
+     opt.train_bias = True
+     opt.change_mapping = False
+     # opt.spike_function = "deterministic"
+-    opt.w_decay = 0.00
+-    opt.l1_decay = 0.01
++    opt.w_decay = 0.1
++    opt.l1_decay = 0.1
+ 
+     opt.exc_inh_tau_mem_ratio = 3.0
+     opt.keep_all_input = 1
+@@ -533,16 +488,15 @@ def config_vahid(opt):
+     opt.latent_new = True
+     opt.with_behaviour = True
+     # opt.device = "cpu"
+-    opt.loss_trial_type = False
+     opt.reaction_time_limits = [-1, 0.2]
+-    opt.session_based = True
+     opt.with_task_splitter = True
+     opt.z_score = True
+-    opt.jaw_open_loop = False
+-    opt.train_with_jaw = True
++    opt.jaw_open_loop = True
+     opt.motor_buffer_size = 40
+-    opt.jaw_tongue = 2
+-    opt.jaw_nonlinear = True
++    opt.jaw_tongue = 1
++    opt.jaw_nonlinear = False
++    opt.temperature = 15
++    opt.scaling_jaw_in_model = False
+     return opt
+ 
+ 
+@@ -592,8 +546,6 @@ opt.clamp = 0
+ opt.log_every_n_steps = 100
+ opt.change_connection_inertia = 0.1
+ opt.assignment_method = "lin_sum_assign"
+-if opt.batch_size_data is None:
+-    opt.batch_size_data = opt.batch_size
+ 
+ 
+ def get_opt(log_path=None):
+diff --git a/infopath/metrics.py b/infopath/metrics.py
+index a80e1c7..09942f0 100644
+--- a/infopath/metrics.py
++++ b/infopath/metrics.py
+@@ -194,8 +194,8 @@ def trial_metric(
+ def trial_metric_with_jaw(
+     filt_train,
+     filt_test,
+-    filt_data_jaw,
+-    filt_model_jaw,
++    filt_jaw_train,
++    filt_jaw_test,
+     session_info,
+     model,
+     measure,
+@@ -204,21 +204,18 @@ def trial_metric_with_jaw(
+ ):
+     metric = []
+     for sess in range(len(session_info[0])):
+-        f_train, f_test, f_data_jaw, f_model_jaw, idx = session_tensor_jaw(
++        f_train, f_test, f_jaw_train, f_jaw_test, idx = session_tensor_jaw(
+             sess,
+             session_info,
+             filt_train,
+             filt_test,
+-            filt_data_jaw,
+-            filt_model_jaw,
+-            modulated=modulated,
++            filt_jaw_train,
++            filt_jaw_test,
+         )
+-        areas = model.rnn.cells[0].area_index[session_info[-1][sess]]
+-        areas = areas.unique()
+         if idx.sum() < 10:
+             continue
+         pop_train, pop_test = model.feature_pop_avg(
+-            f_train, f_test, f_data_jaw, f_model_jaw, idx, sess
++            f_train, f_test, f_jaw_train, f_jaw_test, idx, sess, z_score=True
+         )
+         if len(pop_train) == 0:
+             continue
+@@ -237,7 +234,6 @@ def trial_metric_with_jaw(
+             keep_train = torch.randperm(pop_train.shape[1])[:keep]
+             keep_test = torch.randperm(pop_test.shape[1])[:keep]
+             pop_train, pop_test = pop_train[:, keep_train], pop_test[:, keep_test]
+-        T = int(pop_train.shape[0] // areas.shape[0])
+         metric.append(measure(pop_train.T, pop_test.T, dim=1).mean())
+     metric = torch.tensor(metric)
+     return metric
+diff --git a/infopath/model_loader_gan_with_jaw.py b/infopath/model_loader_gan_with_jaw.py
+index b7d7372..f0c74bb 100644
+--- a/infopath/model_loader_gan_with_jaw.py
++++ b/infopath/model_loader_gan_with_jaw.py
+@@ -5,7 +5,7 @@ from models.SRM import SRMMultiLayer
+ import numpy as np
+ import torch.nn as nn
+ import torch
+-from utils.functions import mse_2d, session_tensor_jaw, session_tensor
++from utils.functions import mse_2d, bce_2d, session_tensor_jaw, session_tensor
+ from utils.logger import reload_weights, optimizer_to
+ from infopath.sequence_loader import TrialToSpike
+ import os
+@@ -16,6 +16,7 @@ from geomloss import SamplesLoss
+ from sklearn.metrics import roc_auc_score
+ from torch.nn.parameter import Parameter
+ from infopath.loss_splitter import NormalizedMultiTaskSplitter
++from torch.nn import BCEWithLogitsLoss
+ 
+ 
+ class FullModel(nn.Module):
+@@ -47,8 +48,8 @@ class FullModel(nn.Module):
+         self.resample_module = torch.nn.AvgPool1d(
+             2 * stride, stride, padding=padding, count_include_pad=False
+         )
+-        input_dimD = int((self.opt.stop - self.opt.start) / self.opt.dt * 1000)
+-        input_dimD = int(input_dimD / stride / kernel_size)
++        self.T = int((self.opt.stop - self.opt.start) / self.opt.dt * 1000)
++        input_dimD = int(np.round(self.T / stride / kernel_size))
+         self.n_pca_comp = self.opt.n_pca_comp
+         if self.opt.pca_features:
+             input_dimD = self.n_pca_comp
+@@ -59,8 +60,9 @@ class FullModel(nn.Module):
+         task_splitters += opt.loss_neuron_wise
+         task_splitters += opt.loss_cross_corr
+         task_splitters += opt.loss_firing_rate
+-        task_splitters += opt.loss_trial_type
++        task_splitters += opt.loss_trial_matched_mle
+         self.multi_task_splitter = NormalizedMultiTaskSplitter(task_splitters)
++        self.tpop_gan = opt.tpop_gan
+ 
+     def pca_make(self, data_spikes, model_spikes, session_info):
+         dev = data_spikes.device
+@@ -129,6 +131,8 @@ class FullModel(nn.Module):
+         Return:
+             filtered spikes with kernel specified from the self.opt
+         """
++        if spikes is None:
++            return None
+         spikes = spikes.permute(2, 1, 0)
+         spikes = self.filter(spikes)
+         return spikes.permute(2, 1, 0)
+@@ -278,9 +282,55 @@ class FullModel(nn.Module):
+         min_trials = min(filt_model_spikes.shape[0], filt_data_spikes.shape[0])
+         filt_data_spikes = filt_data_spikes[:min_trials]
+         filt_model_spikes = filt_model_spikes[:min_trials]
+-        cost = mse_2d(filt_model_spikes.T, filt_data_spikes.T)
+-        keepx, ytox = linear_sum_assignment(cost.detach().cpu().numpy())
+-        return cost[keepx, ytox].mean()
++        with torch.no_grad():
++            cost = mse_2d(filt_model_spikes.T, filt_data_spikes.T)
++            keepx, ytox = linear_sum_assignment(cost.detach().cpu().numpy())
++        return torch.nn.MSELoss()(filt_model_spikes[keepx], filt_data_spikes[ytox])
++
++    def trial_matched_mle(
++        self, data_spikes, model_spikes, session_info, data_jaw, model_jaw
++    ):
++        pop_loss, sessions = 0, 0
++
++        for session in range(len(session_info[0])):
++            (
++                data_spikes_sess,
++                model_spikes_sess,
++                f_data_jaw,
++                f_model_jaw,
++                idx,
++            ) = session_tensor_jaw(
++                session,
++                session_info,
++                data_spikes,
++                model_spikes,
++                data_jaw,
++                model_jaw,
++            )
++            data_spikes_sess = (data_spikes_sess > 0) * 1.0
++            data_spikes_sess = self.filter_spikes(data_spikes_sess)
++            # data_spikes_sess = self.resample(data_spikes_sess)
++            model_spikes_sess = self.filter_spikes(model_spikes_sess)
++            # model_spikes_sess = self.resample(model_spikes_sess)
++
++            min_trials = min(model_spikes_sess.shape[1], data_spikes_sess.shape[1])
++            T, K, N = model_spikes_sess.shape
++            model_spikes_sess = model_spikes_sess[
++                :, torch.randperm(K)[:min_trials]
++            ].permute(1, 0, 2)
++            T, K, N = data_spikes_sess.shape
++            data_spikes_sess = data_spikes_sess[
++                :, torch.randperm(K)[:min_trials]
++            ].permute(1, 0, 2)
++
++            with torch.no_grad():
++                cost = bce_2d(model_spikes_sess, data_spikes_sess)
++                keepx, ytox = linear_sum_assignment(cost.detach().cpu().numpy())
++            # pop_loss += cost[keepx, ytox].mean()
++            pop_loss += nn.BCELoss()(model_spikes_sess[keepx], data_spikes_sess[ytox])
++            # pop_loss += self.sink_loss(model_spikes_sess.reshape(min_trials,-1), data_spikes_sess.reshape(min_trials,-1))
++            sessions += 1
++        return pop_loss  # / sessions
+ 
+     def cross_corr_loss(
+         self,
+@@ -342,6 +392,7 @@ class FullModel(nn.Module):
+         coeff_licks=1,
+         z_score=False,
+     ):
++        # outputs = self.lick_classifier(filt_model_jaw[:,:,0].T).flatten()
+         filt_data = self.resample(filt_data)
+         filt_model = self.resample(filt_model)
+         if filt_data_jaw is not None:
+@@ -369,14 +420,22 @@ class FullModel(nn.Module):
+             # neurons = (area == a).sum() / 60  # approximetely mean number neurons / sess
+             f_model = (f_model - mean) / std  # * neurons
+             f_data = (f_data - mean) / std  # * neurons
+-            feat_data.append(f_data * coeff_pop_avg)
+-            feat_model.append(f_model * coeff_pop_avg)
++            norm_data = 1  # torch.linalg.vector_norm(f_data, dim=1).mean()
++            feat_data.append(f_data * coeff_pop_avg / norm_data)
++            feat_model.append(f_model * coeff_pop_avg / norm_data)
+         if len(feat_data) == 0:
+             return torch.tensor(feat_data), torch.tensor(feat_model)
+         if filt_data_jaw is not None:
+             sess = 0 if filt_model_jaw.shape[2] == 1 else session
+-            feat_model.append(filt_model_jaw[..., sess].T * coeff_licks)
+-            feat_data.append(filt_data_jaw[..., session].T * coeff_licks)
++            norm_data = 1  # torch.linalg.vector_norm(filt_data_jaw[..., session].T, dim=1).mean()
++            feat_model.append(filt_model_jaw[..., sess].T * coeff_licks / norm_data)
++            feat_data.append(filt_data_jaw[..., session].T * coeff_licks / norm_data)
++        # outputs_data = torch.tensor(self.session_info[0][session] % 2).cuda()*1.
++        # norm_data = (outputs_data).mean()**0.5
++        # outputs_data /= norm_data
++        # outputs /= norm_data
++        # feat_data.append(outputs_data[:,None])
++        # feat_model.append(outputs[:,None])
+         feat_data = torch.cat(feat_data, dim=1)
+         feat_model = torch.cat(feat_model, dim=1)
+         return feat_data, feat_model
+@@ -394,21 +453,11 @@ class FullModel(nn.Module):
+     def pop_loss(
+         self, filt_data_all, filt_model_all, session_info, data_jaw, model_jaw
+     ):
+-        pop_loss = 0
+-        pop_loss_only_one_session = False
+-        rand_session = np.random.randint(len(session_info[0]))
+-        sessions = 0
+-        fr = torch.cat(
+-            [self.rnn.cells[0].firing_rate_exc, self.rnn.cells[0].firing_rate_inh]
++        pop_loss, sessions = 0, 0
++        loss_fun = (
++            self.sink_loss if self.opt.geometric_loss else self.population_average_loss
+         )
+-        if self.opt.geometric_loss:
+-            loss_fun = self.sink_loss
+-        else:
+-            loss_fun = self.population_average_loss
+         for session in range(len(session_info[0])):
+-            if pop_loss_only_one_session:
+-                if session != rand_session:
+-                    continue
+             filt_data, filt_model, f_data_jaw, f_model_jaw, idx = session_tensor_jaw(
+                 session,
+                 session_info,
+@@ -417,10 +466,7 @@ class FullModel(nn.Module):
+                 data_jaw,
+                 model_jaw,
+             )
+-            if filt_model.shape[1] == 0:
+-                print("wtf happened here")
+-                continue
+-            if filt_data.shape[2] < 10:
++            if filt_data.shape[2] < 10 or filt_model.shape[1] == 0:
+                 continue
+             feat_data, feat_model = self.feature_pop_avg(
+                 filt_data,
+@@ -508,13 +554,11 @@ class FullModel(nn.Module):
+         session_info,
+         discriminator=True,
+     ):
+-        filt_model = self.filter_spikes(model_spikes)
+-        filt_data = self.filter_spikes(data_spikes)
+-        filt_model_jaw = self.filter_spikes(model_jaw)
+-        if data_jaw is not None:
+-            filt_data_jaw = self.filter_spikes(data_jaw)
+-        else:
+-            filt_data_jaw = None
++        if self.tpop_gan:
++            model_spikes = self.filter_spikes(model_spikes)
++            data_spikes = self.filter_spikes(data_spikes)
++            data_jaw = self.filter_spikes(data_jaw)
++            model_jaw = self.filter_spikes(model_jaw)
+         loss, sessions, accuracy = 0, 0, 0
+         bce = torch.nn.BCELoss()
+         output_data, output_model, labels_data, labels_model = [], [], [], []
+@@ -528,28 +572,41 @@ class FullModel(nn.Module):
+             ) = session_tensor_jaw(
+                 session,
+                 session_info,
+-                filt_data,
+-                filt_model,
+-                filt_data_jaw,
+-                filt_model_jaw,
+-            )
+-            feat_data, feat_model = self.feature_pop_avg(
+-                filt_data_s,
+-                filt_model_s,
+-                f_data_jaw,
+-                f_model_jaw,
+-                idx,
+-                session,
+-                z_score=self.opt.z_score,
++                data_spikes,
++                model_spikes,
++                data_jaw,
++                model_jaw,
+             )
++            if self.tpop_gan:
++                feat_data, feat_model = self.feature_pop_avg(
++                    filt_data_s,
++                    filt_model_s,
++                    f_data_jaw,
++                    f_model_jaw,
++                    idx,
++                    session,
++                    z_score=self.opt.z_score,
++                )
++            else:
++                feat_data = filt_data_s
++                feat_model = filt_model_s
++                if f_data_jaw is not None:
++                    feat_data = torch.cat([feat_data, f_data_jaw])
++                    feat_model = torch.cat([feat_model, f_model_jaw])
+             if len(feat_data) == 0:
+                 continue
+             # min_trials = min(feat_data.shape[0], feat_model.shape[0])
+             # feat_model, feat_data = feat_model[:min_trials], feat_data[:min_trials]
+-            out_data = netD.discriminators[session](feat_data)
++            if self.tpop_gan:
++                out_data = netD.discriminators[session](feat_data)
++            else:
++                out_data = netD.discriminators[session](feat_data.permute(1, 2, 0))
+             if discriminator:
+                 feat_model = feat_model.detach()
+-            out_model = netD.discriminators[session](feat_model)
++            if self.tpop_gan:
++                out_model = netD.discriminators[session](feat_model)
++            else:
++                out_model = netD.discriminators[session](feat_model.permute(1, 2, 0))
+             l_data = torch.ones_like(out_data)
+             if discriminator:
+                 l_model = torch.zeros_like(out_model)
+@@ -591,9 +648,12 @@ class FullModel(nn.Module):
+             state,
+             sample_trial_noise=False,
+         )
+-        model_jaw = (model_jaw[0] - self.jaw_mean) / self.jaw_std
+-        if self.opt.jaw_nonlinear:
+-            model_jaw = torch.exp(model_jaw) - 1
++        if not opt.scaling_jaw_in_model:
++            model_jaw = (model_jaw[0] - self.jaw_mean) / self.jaw_std
++            if self.opt.jaw_nonlinear:
++                model_jaw = torch.exp(model_jaw) - 1
++        else:
++            model_jaw = model_jaw[0]
+         return spike_outputs[0], voltages[0], model_jaw, state
+ 
+     def generator_loss(
+@@ -610,7 +670,8 @@ class FullModel(nn.Module):
+         count_tasks = 0
+         if self.opt.with_task_splitter:
+             model_spikes_list = self.multi_task_splitter(model_spikes)
+-
++        else:
++            model_spikes_list = [model_spikes]
+         opt = self.opt
+         filt_model = self.filter_spikes(model_spikes)
+         filt_data = self.filter_spikes(data_spikes)
+@@ -648,14 +709,14 @@ class FullModel(nn.Module):
+         if opt.loss_trial_wise:
+             if opt.gan_loss:
+                 if self.opt.with_task_splitter:
+-                    filt_model = self.filter_spikes(model_spikes_list[count_tasks])
++                    model_spikes = model_spikes_list[count_tasks]
+                     count_tasks += 1
+                 trial_loss, _ = self.discriminator_loss(
+                     netD,
+-                    filt_model,
+-                    filt_data,
+-                    filt_data_jaw,
+-                    filt_model_jaw,
++                    model_spikes,
++                    data_spikes,
++                    data_jaw,
++                    model_jaw,
+                     session_info,
+                     discriminator=False,
+                 )
+@@ -670,24 +731,17 @@ class FullModel(nn.Module):
+                     filt_data_jaw,
+                     filt_model_jaw,
+                 )
+-        if opt.loss_trial_type:
++        if opt.loss_trial_matched_mle:
+             if self.opt.with_task_splitter:
+-                if opt.session_based:
+-                    pred = self.combine_session(
+-                        model_spikes_list[count_tasks],
+-                        trial_type_classifier,
+-                        combine_sessions,
+-                        session_info,
+-                    )
+-                else:
+-                    pred = trial_type_classifier(
+-                        model_spikes_list[count_tasks].permute(1, 2, 0)
+-                    )
++                model_spikes = model_spikes_list[count_tasks]
+                 count_tasks += 1
+-            else:
+-                # TODO no implemented for no multi and session_based
+-                pred = trial_type_classifier(model_spikes.permute(1, 2, 0))
+-            tt_distro_loss += self.kl_loss(pred, session_info)
++            psth_loss += self.trial_matched_mle(
++                data_spikes,
++                model_spikes,
++                session_info,
++                data_jaw,
++                model_jaw,
++            )
+         firing_rate_loss = opt.coeff_firing_rate_distro_reg * fr_loss
+         trial_loss *= opt.coeff_trial_loss
+         psth_loss *= opt.coeff_loss
+@@ -842,7 +896,11 @@ class FullModel(nn.Module):
+ 
+ 
+ def load_model_and_optimizer(
+-    opt, reload_model=False, reload_model_and_optim=False, last_best="last"
++    opt,
++    reload_model=False,
++    reload_model_and_optim=False,
++    last_best="last",
++    inference=False,
+ ):
+ 
+     model = FullModel(opt)
+@@ -853,24 +911,37 @@ def load_model_and_optimizer(
+         reaction_time_limits=opt.reaction_time_limits,
+     )
+     model.set_firing_rates_from_recordings()
++    if not inference:
++        if opt.tpop_gan:
++            netD = DiscriminatorSession(
++                model, opt.gan_hidden_neurons, opt.with_behaviour
++            )
++        else:
++            netD = DiscriminatorSessionCNN(
++                model, opt.gan_hidden_neurons, opt.with_behaviour
++            )
++        optimizerD = torch.optim.AdamW(
++            netD.parameters(), lr=opt.lr, weight_decay= 1 # opt.w_decay
++        )
++        netD.to(opt.device)
+ 
+-    netD = DiscriminatorSession(model, opt.gan_hidden_neurons, opt.with_behaviour)
++    else:
++        netD, optimizerD = None, None
+     optimizerG = torch.optim.AdamW(
+         model.parameters(), lr=opt.lr, weight_decay=opt.w_decay
+     )
+-    optimizerD = torch.optim.AdamW(
+-        netD.parameters(), lr=opt.lr, weight_decay=1  # opt.w_decay
+-    )
+ 
+-    if reload_model or reload_model_and_optim:
+-        optim_path = os.path.join(opt.log_path, "last_optimD.ckpt")
+-        netD_path = os.path.join(opt.log_path, "last_netD.ckpt")
+-        optimizerD.load_state_dict(torch.load(optim_path, map_location=opt.device.type))
+-        netD.load_state_dict(torch.load(netD_path, map_location=opt.device.type))
++    if reload_model_and_optim:
++        if opt.gan_loss:
++            optim_path = os.path.join(opt.log_path, "last_optimD.ckpt")
++            netD_path = os.path.join(opt.log_path, "last_netD.ckpt")
++            optimizerD.load_state_dict(
++                torch.load(optim_path, map_location=opt.device.type)
++            )
++            netD.load_state_dict(torch.load(netD_path, map_location=opt.device.type))
++        reload_weights(opt, model, optimizerG, last_best=last_best)
+     if reload_model:
+         reload_weights(opt, model, last_best=last_best)
+-    elif reload_model_and_optim:
+-        reload_weights(opt, model, optimizerG, last_best=last_best)
+     try:
+         model.sessions = np.load(
+             os.path.join(opt.log_path, "sessions.npy"), allow_pickle=True
+@@ -883,7 +954,6 @@ def load_model_and_optimizer(
+     except:
+         pass
+     model.to(opt.device)
+-    netD.to(opt.device)
+     return model, netD, optimizerG, optimizerD
+ 
+ 
+@@ -926,6 +996,84 @@ class DiscriminatorSession(nn.Module):
+             )
+ 
+ 
++class DiscriminatorCNN(nn.Module):
++    def __init__(self, input_dim, hidden_neurons):
++        super(DiscriminatorCNN, self).__init__()
++        kernel_size_1, dilation1, stride1, padding1 = 6, 1, 3, 0
++        kernel_size_2, dilation2, stride2, padding2 = 8, 1, 4, 0
++        # kernel_size_1, dilation1, stride1, padding1 = 4, 1, 2, 0
++        # kernel_size_2, dilation2, stride2, padding2 = 4, 1, 2, 0
++        self.num_neurons = input_dim[1]
++        time_points = input_dim[0]
++        filters1, filters2 = 32, 32
++        self.conv1 = nn.Conv1d(
++            self.num_neurons,
++            filters1,
++            kernel_size=kernel_size_1,
++            dilation=dilation1,
++            padding=padding1,
++            stride=stride1,
++        )
++        nn.init.xavier_uniform_(self.conv1.weight)
++        lout_conv1 = int(
++            (time_points + 2 * padding1 - dilation1 * (kernel_size_1 - 1) - 1) / stride1
++            + 1
++        )
++
++        self.batchnorm1 = nn.BatchNorm1d(filters1)
++        self.conv2 = nn.Conv1d(
++            filters1,
++            filters2,
++            kernel_size=kernel_size_2,
++            dilation=dilation2,
++            padding=padding2,
++            stride=stride2,
++        )
++        nn.init.xavier_uniform_(self.conv2.weight)
++        lout_conv2 = int(
++            (lout_conv1 + 2 * padding2 - dilation2 * (kernel_size_2 - 1) - 1) / stride2
++            + 1
++        )
++
++        self.batchnorm2 = nn.BatchNorm1d(filters2)
++        self.layernorm1 = nn.LayerNorm(filters1)
++        self.layernorm2 = nn.LayerNorm(filters2)
++        self.flatten = nn.Flatten()
++
++        self.fc1 = nn.Linear((lout_conv2) * filters2, hidden_neurons)
++        nn.init.xavier_uniform_(self.fc1.weight)
++
++        self.fc2 = nn.Linear(hidden_neurons, 1)
++        nn.init.xavier_uniform_(self.fc2.weight)
++        self.dropout = nn.Dropout()
++        self.leaky_relu = torch.nn.LeakyReLU(0.2)
++
++    def forward(self, x):
++        x = self.leaky_relu(self.conv1(x))
++        # x = self.layernorm1(x.permute(0, 2, 1)).permute(0, 2, 1)
++        x = self.batchnorm1(x)
++        x = self.leaky_relu(self.conv2(x))
++        # x = self.layernorm2(x.permute(0, 2, 1)).permute(0, 2, 1)
++        x = self.batchnorm2(x)
++        x = self.flatten(x)
++        x = self.dropout(x)
++        x = self.leaky_relu(self.fc1(x))
++        x = torch.sigmoid(self.fc2(x))
++        return x
++
++
++class DiscriminatorSessionCNN(nn.Module):
++    def __init__(self, model, hidden_neurons, with_behaviour=True):
++        super(DiscriminatorSessionCNN, self).__init__()
++        self.discriminators = torch.nn.ModuleList()
++        sessions = np.unique(model.sessions)
++        for session in sessions:
++            neurons = (model.sessions == session).sum() + with_behaviour
++            self.discriminators.append(
++                DiscriminatorCNN([model.T, neurons], hidden_neurons)
++            )
++
++
+ def num_areas(model, session):
+     area_index = model.rnn.cells[0].area_index
+     areas = area_index[session == model.sessions].unique()
+diff --git a/infopath/sequence_loader.py b/infopath/sequence_loader.py
+index cf85bdb..cc32700 100644
+--- a/infopath/sequence_loader.py
++++ b/infopath/sequence_loader.py
+@@ -23,8 +23,8 @@ class TrialGenerator:
+         self.batch_size = opt.batch_size
+         self.device = opt.device
+         self.counter_stim = 0
+-        self.random_trials = not bool(opt.multi_trial_train)
+-        self.mixed_non_random = bool(opt.mixed_non_random)
++        # self.random_trials = not bool(opt.multi_trial_train)
++        # self.mixed_non_random = bool(opt.mixed_non_random)
+ 
+     def generate_batch_of_sequences(self):
+         trials = []
+diff --git a/infopath/train_GAN_with_behaviour.py b/infopath/train_GAN_with_behaviour.py
+index 3cd5869..53ed0e8 100644
+--- a/infopath/train_GAN_with_behaviour.py
++++ b/infopath/train_GAN_with_behaviour.py
+@@ -89,6 +89,7 @@ def train(opt, model, netD, optimizerG, optimizerD, step=-1):
+         train=1, trial_type=[2, 3], device=opt.device, jaw_tongue=opt.jaw_tongue
+     )
+     model.to(opt.device)
++    print(np.unique(model.sessions))
+     netD.to(opt.device)
+     if opt.loss_trial_type:
+ 
+@@ -168,9 +169,12 @@ def train(opt, model, netD, optimizerG, optimizerD, step=-1):
+         data_spikes1 = all_data_spikes[index]
+         data_jaw1 = all_data_jaw[index]
+         session_info1 = all_session_info[index]
+-        data_spikes, data_jaw, session_info = balance_trial_type(
+-            data_spikes1, data_jaw1, session_info1, all_data_perc[index], seed=0
+-        )
++        if opt.balance_trial_types:
++            data_spikes, data_jaw, session_info = balance_trial_type(
++                data_spikes1, data_jaw1, session_info1, all_data_perc[index]
++            )
++        else:
++            data_spikes, data_jaw, session_info = data_spikes1, data_jaw1, session_info1
+         # make stims with same distro as the data
+         fix_random = False
+         if fix_random:
+@@ -222,6 +226,10 @@ def train(opt, model, netD, optimizerG, optimizerD, step=-1):
+                 print("explosion detected")
+                 explosion_flag = True
+                 break
++            if opt.use_logits:
++                model_activity = torch.sigmoid(voltages)
++            else:
++                model_activity = model_spikes
+             (
+                 fr_loss,
+                 trial_loss,
+@@ -229,7 +237,7 @@ def train(opt, model, netD, optimizerG, optimizerD, step=-1):
+                 cross_corr_loss,
+                 tt_loss,
+             ) = model.generator_loss(
+-                model_spikes,
++                model_activity,
+                 data_spikes[start:stop],
+                 model_jaw,
+                 d_jaw,
+@@ -324,7 +332,8 @@ def train(opt, model, netD, optimizerG, optimizerD, step=-1):
+         to_save_lists["cross_corr_loss"].append(
+             float(iteration_loss["cross_corr_loss"])
+         )
+-        to_save_lists["tpop_pearson"].append(float(tpop_pearson))
++        if tpop_pearson != 0:
++            to_save_lists["tpop_pearson"].append(float(tpop_pearson))
+ 
+         # if step == 5000:
+         #     print("change lr")
+@@ -409,8 +418,6 @@ def sample_train_trials(data_spikes, session_info, batch_size):
+ 
+ def print_tpop_pearson(filt_data, filt_model, data_jaw, model_jaw, model, session_info):
+     with torch.no_grad():
+-        pca_feat = model.opt.pca_features
+-        model.opt.pca_features = False
+         Tpop_p = trial_metric_with_jaw(
+             filt_data,
+             filt_model,
+@@ -420,7 +427,6 @@ def print_tpop_pearson(filt_data, filt_model, data_jaw, model_jaw, model, sessio
+             model,
+             pear_corr,
+         )
+-        model.opt.pca_features = pca_feat
+         print(Tpop_p.mean())
+         return Tpop_p.mean()
+ 
+@@ -460,17 +466,17 @@ def prepare_plot(
+             mean_signals.append(exc)
+ 
+         model_spikes = model.filter_spikes(activity)
+-        model_jaw = model.filter_spikes(model_jaw)
++        filt_jaw = model.filter_spikes(model_jaw)
+         data_spikes = model.filter_spikes(test_data_spikes)
+         plt.figure()
+-        plt.plot(model_jaw[:, :5, 0].cpu())
++        plt.plot(filt_jaw[:, :5, 0].cpu())
+         data_jaw = None
+         if test_jaw is not None:
+             data_jaw = model.filter_spikes(test_jaw)
+             plt.plot(data_jaw[:, :4, 1].cpu())
+         plt.savefig(os.path.join(opt.log_path, "jaws"))
+         trial_type, active_quiet = model.return_hit_active(
+-            activity, test_data_spikes, data_jaw, model_jaw, per_session_info
++            activity, test_data_spikes, data_jaw, filt_jaw, per_session_info
+         )
+         trial_type = trial_match_template(
+             model,
+@@ -546,16 +552,16 @@ def prepare_plot(
+         if opt.gan_loss:
+             trial_loss, _ = model.discriminator_loss(
+                 netD,
+-                model_spikes,
+-                data_spikes,
+-                data_jaw,
++                activity,
++                test_data_spikes,
++                test_jaw,
+                 model_jaw,
+                 per_session_info,
+                 discriminator=False,
+             )
+         else:
+             trial_loss = model.pop_loss(
+-                data_spikes, model_spikes, per_session_info, data_jaw, model_jaw
++                data_spikes, model_spikes, per_session_info, data_jaw, filt_jaw
+             )
+ 
+         fr_distro_loss = opt.coeff_firing_rate_distro_reg * fr_loss
+@@ -564,9 +570,7 @@ def prepare_plot(
+         cross_corr_loss *= opt.coeff_cross_corr_loss
+         test_loss = (psth_loss + trial_loss + fr_distro_loss + cross_corr_loss).item()
+ 
+-        print(
+-            f"from the plot: test loss {test_loss:.4f} (psht loss{psth_loss.item():.4f})"
+-        )
++        print(f"from the plot: test loss {test_loss:.4f} (psht loss{psth_loss:.4f})")
+         opt.batch_size = batch_size
+         return activity_figure, test_loss
+ 
+@@ -605,7 +609,7 @@ if __name__ == "__main__":
+         opt = get_opt()
+     else:
+         opt = get_opt(os.path.join("configs", pars.config))
+-
++    # opt = get_opt("configs/gan1")
+     import warnings
+ 
+     warnings.filterwarnings("ignore")
+diff --git a/infopath/trial_loader.py b/infopath/trial_loader.py
+index 16180c4..39c8f0b 100644
+--- a/infopath/trial_loader.py
++++ b/infopath/trial_loader.py
+@@ -375,7 +375,7 @@ class TrialDataset(Dataset):
+                     tmp = self.jaw[:, indices][..., session].to(device)
+                 elif jaw_tongue == 2:
+                     tmp = self.tongue[:, indices][..., session].to(device)
+-                jaw_train_tt[:, :trials, session] = tmp #- tmp[:self.start].mean(0)
++                jaw_train_tt[:, :trials, session] = tmp - tmp[: self.start].mean(0)
+             for i in range(len(self.session_info) - 1):
+                 new_session_info[i].append(self.session_info[i][session][indices])
+         return spikes_train_tt, spikes_train_tt_pre, jaw_train_tt, new_session_info
+@@ -594,35 +594,40 @@ def balance_trial_type(data_spikes, data_jaw, session_info, data_perc, seed=None
+             np.unique(session_info[0][id_sess], return_counts=True)[1]
+             / session_info[0][id_sess].shape[0]
+         )
++        assert data_perc.shape == sess_perc.shape, "no same classes"
++
+         # which trial is the most underrepresented
+-        argmax = (data_perc / sess_perc).argmax()
+-        add_argmax = session_info[0][id_sess].min()
+-        # actual trials that can be utilized
+-        N = (session_info[0][id_sess] == argmax + add_argmax).sum() / data_perc[argmax]
+-
+-        N = N.astype(int)
+-        # make a mask of the original data
+-        p_mask = np.round(N * data_perc).astype(int)
+-
+-        idx = np.zeros(p_mask.sum()).astype(int)
+-        pmask_cumsum = np.concatenate([[0], p_mask.cumsum()])
+-        for value in range(len(data_perc)):
+-            condition_ids = np.where(session_info[0][id_sess] == value + add_argmax)[0]
++        under_class = (data_perc / sess_perc).argmax()
++        # which is the first class
++        add_to_class = session_info[0][id_sess].min()
++        # actual trials that can be utilized if we restrict the balance
++        K = (session_info[0][id_sess] == under_class + add_to_class).sum() / data_perc[under_class]
++
++        K = K.astype(int)
++        # number of each trial type with balanced percentage
++        count_balanced = np.round(K * data_perc).astype(int)
++        K = count_balanced.sum()
++        count = 0
++        # new index with which we will reform the data
++        idx = np.zeros(count_balanced.sum()).astype(int)
++        for i, value in enumerate(range(add_to_class, len(data_perc)+add_to_class)):
++            condition_ids = np.where(session_info[0][id_sess] == value)[0]
+             np.random.seed(seed)
+             np.random.shuffle(condition_ids)
+-            idx[pmask_cumsum[value] : pmask_cumsum[value + 1]] = condition_ids[
+-                : p_mask[value]
++            idx[count : count+count_balanced[i]] = condition_ids[
++                : count_balanced[i]
+             ]
+-        # mask = np.array([np.random.rand()<p_mask[j] for j in session_info[0][id_sess]])
++            count += count_balanced[i]
++
++        neurons_sess = session_info[-1][id_sess]
+         for i in range(len(session_info) - 1):
+             session_info_new[i].append(session_info[i][id_sess][idx])
+-        session_info_new[-1].append(session_info[-1][id_sess])
+-        # mask = np.where(mask)[0]
+-        data_spikes_new[:, : idx.shape[0], session_info_new[-1][id_sess]] = data_spikes[
++        session_info_new[-1].append(neurons_sess)
++        data_spikes_new[:, : K, neurons_sess] = data_spikes[
+             :, idx
+         ][..., session_info[-1][id_sess]]
+         if data_jaw is not None:
+-            data_jaw_new[:, : idx.shape[0], id_sess] = data_jaw[:, idx, id_sess]
++            data_jaw_new[:, : K, id_sess] = data_jaw[:, idx, id_sess]
+     return data_spikes_new, data_jaw_new, session_info_new
+ 
+ 
+diff --git a/models/EI_LSNN_simplified_with_behaviour0.py b/models/EI_LSNN_simplified_with_behaviour0.py
+index ed83c8d..2a68d1e 100644
+--- a/models/EI_LSNN_simplified_with_behaviour0.py
++++ b/models/EI_LSNN_simplified_with_behaviour0.py
+@@ -64,6 +64,7 @@ class LSNNCell(nn.Module):
+         mean_fr=5,
+         latent_new=False,
+         jaw_open_loop=False,
++        scaling_jaw_in_model=False,
+     ):
+         """Run conductanced-based LIF neurons with synaptic delays
+ 
+@@ -108,7 +109,8 @@ class LSNNCell(nn.Module):
+         self.input_size = input_size
+         self.hidden_size = hidden_size
+         self.prop_light = prop_light
+-        self.thr = thr
++        self.thr0 = thr
++        self.scaling_jaw_in_model = scaling_jaw_in_model
+         # the convention is that we always start with excitatory
+         self.excitatory = int(p_exc * hidden_size)
+         self.inhibitory = hidden_size - self.excitatory
+@@ -154,8 +156,9 @@ class LSNNCell(nn.Module):
+             self.conv = torch.nn.Conv1d(
+                 1, self.hidden_size, kernel_size=self.jaw_kernel, bias=False
+             )
++            self._w_jaw_pre.data *= 10
+             self.conv.weight.data = self._w_jaw_post[None].permute(2, 0, 1)
+-
++            self.jaw_bias = Parameter(torch.ones(1))
+         weights_in, mask_in, _, _, (n_exc, n_inh) = self.make_input_weight_matrix(
+             self.input_size, p_inpe, p_inpi, p_exc, keep_all_input
+         )
+@@ -245,6 +248,7 @@ class LSNNCell(nn.Module):
+         else:
+             assert True, "wrong spike function"
+ 
++        self.train_noise_bias = train_noise_bias
+         if train_noise_bias:
+             self.bias = Parameter(torch.ones(hidden_size))
+         else:
+@@ -631,8 +635,6 @@ class LSNNCell(nn.Module):
+             self.trial_noise_ready = fun_var
+         else:
+             self.trial_noise_ready = self.trial_noise @ self.trial_offset
+-        # if self.motor_areas.shape[0] > 0:
+-        #     exc_jaw = self.n_exc_jaw
+         exc_in = self.n_exc_inp
+         inp_cur_exc = torch.einsum(
+             "tbi,ji->tbj", input[..., :exc_in], self._w_in[:, :exc_in]
+@@ -648,9 +650,10 @@ class LSNNCell(nn.Module):
+         voltage_list = []
+         jaw_list = []
+         z = spike_buffer[-1]
+-        self.thr_rest_diff = self.base_thr.max() - self.v_rest
+-        self.E_exc = self.base_thr.max() * 2
+-        self.E_inh = -self.base_thr.max()
++        self.thr = self.thr0 - self.v_rest
++        self.thr_rest_diff = self.thr0 - self.v_rest
++        self.E_exc = self.thr0 * 2
++        self.E_inh = -self.thr0
+         for i in range(input.shape[0] // self.n_delay):
+             rec_cur_exc, rec_cur_inh = self.prepare_currents(spike_buffer)
+             if self.motor_areas.shape[0] > 0:
+@@ -665,12 +668,12 @@ class LSNNCell(nn.Module):
+                 if self.motor_areas.shape[0] > 0 and not self.jaw_open_loop:
+                     rec_cur.append(rec_cur_jaw[t_idx])
+                 inp_cur = [inp_cur_exc[abs_t_idx], inp_cur_inh[abs_t_idx]]
+-                z, v, ref, b, v_plot = self.step(
++                z, v, ref, b, logits = self.step(
+                     rec_cur, inp_cur, z, v, ref, b, mem_noise[abs_t_idx]
+                 )
+                 jaw_buffer = self.step_jaw(z, jaw_buffer)
+                 jaw_list.append(jaw_buffer[-1])
+-                voltage_list.append(v_plot)
++                voltage_list.append(logits[0])
+                 spike_list.append(z[0])
+                 spike_buffer = torch.cat([spike_buffer[1:], z])
+         state = spike_buffer, v, ref, b, jaw_buffer
+@@ -682,7 +685,7 @@ class LSNNCell(nn.Module):
+ 
+     def step(self, rec_cur, inp_cur, z, v, ref, b, mem_noise):
+         b = self.decay_b * b + (1 - self.decay_b) * z
+-        thr = self.base_thr + b * self.beta
++        thr = self.thr0 + b * self.beta
+         if (thr <= self.v_rest).any():
+             thr[thr <= self.v_rest] += 0.001
+         if self.conductance_based:
+@@ -698,26 +701,39 @@ class LSNNCell(nn.Module):
+         currents = (exc_cur + inh_cur) / dt
+         if self.motor_areas.shape[0] > 0 and not self.jaw_open_loop:
+             currents += rec_cur[2] / dt
+-        mem_noise *= self.thr_rest_diff * self._sigma_mem_noise * dt**0.5
++        # mem_noise *= self.thr * self._sigma_mem_noise * dt**0.5
++        if self.train_noise_bias:
++            mem_noise *= self.thr0 * self._sigma_mem_noise * dt**0.5
++        else:
++            mem_noise *= self.thr_rest_diff * self._sigma_mem_noise * dt**0.5
+         v = (
+             self.decay_v * v
++            # + (1 - self.decay_v) * (currents + self.trial_noise_ready)
+             + (1 - self.decay_v) * (currents + self.trial_noise_ready + self.v_rest)
+             + mem_noise
+         )
+         # Spike generation
++        # z = self.spike_fun((v - self.thr) / thr)
+         z = self.spike_fun((v - thr) / thr)
+-        v_plot = v[0].clone()
++        logits = self.temperature * (v.clone() - thr) / thr
+         if not self.spike_fun_type == "sigmoid":
++            logits = torch.where(ref > 0, torch.ones_like(logits) * -10, logits)
+             ref, z = self.refractoriness(z, ref)
++            # v -= self.thr * z
+             v -= (thr - self.v_rest) * z
+-        return z, v, ref, b, v_plot
++        return z, v, ref, b, logits
+ 
+     def step_jaw(self, z, jaw_buffer):
+         if self.motor_areas.shape[0] > 0:
+             dt = self.dt
+             inp = z[:, :, self.motor_area_index] / dt
+             inp = inp @ self._w_jaw_pre
+-            j = self.decay_jaw * jaw_buffer[-1] + (1 - self.decay_jaw) * inp
++            jpre = jaw_buffer[-1]
++            if self.scaling_jaw_in_model:
++                jpre = torch.log(jpre + self.jaw_bias)
++            j = self.decay_jaw * jpre + (1 - self.decay_jaw) * inp
++            if self.scaling_jaw_in_model:
++                j = torch.exp(j) - self.jaw_bias
+             jaw_buffer = torch.cat([jaw_buffer[1:], j])
+         return jaw_buffer
+ 
+@@ -784,6 +800,7 @@ class LSNNMultiLayerSimplified(nn.Module):
+                 temperature=opt.temperature,
+                 latent_new=opt.latent_new,
+                 jaw_open_loop=opt.jaw_open_loop,
++                scaling_jaw_in_model=opt.scaling_jaw_in_model,
+             )
+             self.cells.append(cell)
+ 
+@@ -829,5 +846,5 @@ class LSNNMultiLayerSimplified(nn.Module):
+             # if cell.motor_areas.shape[0] > 0:
+             #     cell.reform_w_jaw(lr, l1_norm_mult=l1_decay)
+             # cell.reform_biases()
+-            cell.v_rest.data[cell.v_rest > cell.thr] = cell.thr
+-            cell.v_rest.data[cell.v_rest < -cell.thr] = -cell.thr
++            cell.v_rest.data[cell.v_rest > cell.thr0] = cell.thr0
++            cell.v_rest.data[cell.v_rest < -cell.thr0] = -cell.thr0

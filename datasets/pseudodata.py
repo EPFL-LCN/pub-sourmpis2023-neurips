@@ -143,7 +143,8 @@ class PseudoData:
             session_path = "PS{:03d}_20220404".format(sess)
             os.mkdir(os.path.join(self.path, session_path))
             os.mkdir(os.path.join(self.path, session_path, areas[0]))
-            os.mkdir(os.path.join(self.path, session_path, areas[1]))
+            if len(areas) > 1:
+                os.mkdir(os.path.join(self.path, session_path, areas[1]))
             # generate one table per session and a global one (the second helps to construct the RSNN)
             sess_entry = pd.DataFrame(columns=sess_cluster_df.columns)
             all_entry = pd.DataFrame(columns=all_cluster_df.columns)
@@ -288,15 +289,40 @@ class PseudoData:
 
 
 if __name__ == "__main__":
-    fr_exc = firing_rates(1000, average=6, std=2)
-    plt.clf()
-    plt.hist(fr_exc, bins=100)
-    plt.savefig("hello.png")  # , alpha=0.5)
+    # Dataset for Figure 2 and supplementary A2
+    conf = {
+        "onsets": [4, 8],
+        "tau_rise": 5,
+        "tau_fall": 20,
+        "firing_rates": [8, 16],
+        "firing_rates_std": [2, 1],
+        "p_trial_type": 0.8,
+        "trials_per_session": 200,
+        "mod_prob": [0, 0, 0.2, 0.6, 0.2],
+        "pEI": 0.8,
+        "variation": 1,
+    }
+    for i in [8]:
+        conf["onsets"][1] = i
+        path = f"datasets/PseudoData_v16_variation1ms"
+        pseudo_data = PseudoData(
+            path,
+            variation=conf["variation"],
+            onsets=conf["onsets"],
+            tau_rise=conf["tau_rise"],
+            tau_fall=conf["tau_fall"],
+            firing_rates=conf["firing_rates"],
+            firing_rates_std=conf["firing_rates_std"],
+            p_trial_type=conf["p_trial_type"],
+            trials_per_session=conf["trials_per_session"],
+            mod_prob=conf["mod_prob"],
+            pEI=conf["pEI"],
+            num_sessions=10,
+            neurons_per_sess=100,
+        )
+        json.dump(conf, open(path + "/conf.json", "w"))
 
-    fr_inh = firing_rates(1000, average=5, std=2)
-    plt.clf()
-    plt.hist(fr_inh, bins=100)  # , alpha=0.5)
-    plt.savefig("hello.png")
+    # Dataset for supplementary A5
     conf = {
         "onsets": [4, 8],
         "tau_rise": 5,
@@ -328,11 +354,3 @@ if __name__ == "__main__":
             neurons_per_sess=500,
         )
         json.dump(conf, open(path + "/conf.json", "w"))
-    sig_area1, sig_area2 = pseudo_data.trial_prototypes()
-
-    fig, ax = plt.subplots(2, 1)
-    ax[0].plot(sig_area1.T[800:1600])
-    ax[0].plot(sig_area1.T[800:1600].mean(1), "k")
-    ax[1].plot(sig_area2.T[800:1600])
-    ax[1].plot(sig_area2.T[800:1600].mean(1), "k")
-    fig.savefig("hello.png")
