@@ -10,11 +10,11 @@ Contact:
 
 ## Glossary
 1) [Installation](#Installation)
-2) Download recorded data from Esmaeli et al. 2021
-3) Generate simpler artificial data
-4) Load pre-trained models
-5) Code snippet for computing the trial-matching loss function
-6) Generate paper figures
+2) [Download recorded data from Esmaeli et al. 2021](#download-recorded-data)
+3) [Generate simpler artificial data](#generate-artificial-data)
+4) [Load pre-trained models](#pre-trained-models)
+5) [Code snippet for computing the trial-matching loss function](#compute-the-trial-matching-loss-function)
+6) [Generate paper figures](#generate-figures-from-a-pre-trained-model)
 7) [Training the RSNN](#training-the-rsnn-model)
 
 ## Installation
@@ -80,6 +80,30 @@ with torch.no_grad():
 
 ## Compute the trial matching loss-function
 
+Calculate the trial-matching loss with the hard matching (Hungarian Algorithm)
+
+Args:
+
+
+* filt_data_spikes (torch.tensor): $\mathcal{T}_{trial}(z^\mathcal{D})$, with dimension: K x T
+
+* filt_model_spikes (torch.tensor): $\mathcal{T}_{trial}(z)$, with dimension K'  x T
+
+```python
+def hard_trial_matching_loss(filt_data_spikes, filt_model_spikes):
+    # subsample the biggest tensor, so both data and model have the same #trials
+    min_trials = min(filt_model_spikes.shape[0], filt_data_spikes.shape[0])
+    filt_data_spikes = filt_data_spikes[:min_trials] # shape: K x T (assuming K = min(K,K'))
+    filt_model_spikes = filt_model_spikes[:min_trials] # shape: K x T
+    with torch.no_grad():
+        cost = mse_2d(filt_model_spikes.T, filt_data_spikes.T) # shape: K x K 
+        keepx, ytox = linear_sum_assignment(cost.detach().cpu().numpy()) # keepx and ytox are trial indices
+    return torch.nn.MSELoss()(filt_model_spikes[keepx], filt_data_spikes[ytox])
+```
+
+The function above is in the `infopath/losses.py` file.
+
+You can explore the loss function in a simple demo in [trial_matching_loss_demo.ipynb](trial_matching_loss_demo.ipynb).
 
 
 ## Generate figures from a pre-trained model

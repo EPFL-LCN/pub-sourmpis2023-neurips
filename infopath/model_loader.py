@@ -51,7 +51,7 @@ class FullModel(nn.Module):
         if opt.geometric_loss:
             self.trial_loss_fun = SamplesLoss(loss="sinkhorn", p=1, blur=0.01)
         else:
-            self.trial_loss_fun = population_average_loss
+            self.trial_loss_fun = hard_trial_matching_loss
         # setup the loss splitter
         task_splitters = opt.loss_trial_wise
         task_splitters += opt.loss_neuron_wise

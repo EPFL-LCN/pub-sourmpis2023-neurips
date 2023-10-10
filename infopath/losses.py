@@ -12,11 +12,11 @@ def firing_rate_loss(firing_rate, model_spikes, trial_onset, timestep):
     return ((model_fr - data_fr) ** 2).mean()
 
 
-def population_average_loss(filt_data_spikes, filt_model_spikes):
+def hard_trial_matching_loss(filt_data_spikes, filt_model_spikes):
     """Calculate the trial-matching loss with the hard matching (Hungarian Algorithm)
     Args:
-        filt_data_spikes (torch.tesnor): $\mathcal{T}_{trial}(z^\mathcal{D})$, dim Trials x Time
-        filt_model_spikes (torch.tesnor): $\mathcal{T}_{trial}(z)$, dim Trials x Time
+        filt_data_spikes (torch.tensor): $\mathcal{T}_{trial}(z^\mathcal{D})$, dim Trials x Time
+        filt_model_spikes (torch.tensor): $\mathcal{T}_{trial}(z)$, dim Trials x Time
     """
     # downsample the biggest tensor, so both data and model have the same #trials
     min_trials = min(filt_model_spikes.shape[0], filt_data_spikes.shape[0])
@@ -234,7 +234,7 @@ def trial_matching_loss(
         session_info (list): information about different sessions
         data_jaw (torch.tensor): filtered data jaw trace
         model_jaw (torch.tensor): filtered model jaw trace
-        loss_fun (function): function either population_average_loss or sinkhorn loss
+        loss_fun (function): function either hard_trial_matching_loss or sinkhorn loss
         area_index (torch.tensor): tensor with areas
         z_score (bool, optional): whether to z_score or not. Defaults to True.
         trial_loss_area_specific (bool, optional): Whether the T_trial is area specific. Defaults to True.
