@@ -371,7 +371,7 @@ def trial_metric(
     filt_jaw_test,
     session_info,
     model,
-    measure,
+    measure="pear_corr",
     shuffle=False,
     modulated=None,
     seed=0,

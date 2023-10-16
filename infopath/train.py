@@ -93,6 +93,7 @@ def train(opt, model, netD, optimizerG, optimizerD, step=-1):
             session_info_train,
             stim_cond[index],
             data_perc,
+            opt.balance_trial_types,
         )
         torch.cuda.empty_cache()
         torch.manual_seed(step)
@@ -425,7 +426,14 @@ def test_hit_miss(data_spikes, session_info, trial_type=1):
 
 
 def isolate_step_data(
-    train_spikes, train_jaw, data_spikes, data_jaw, session_info_train, stim, data_perc
+    train_spikes,
+    train_jaw,
+    data_spikes,
+    data_jaw,
+    session_info_train,
+    stim,
+    data_perc,
+    balance_trial_types=False,
 ):
     data_spikes, data_jaw, session_info = keep_trial_types_behaviour(
         train_spikes,
@@ -436,7 +444,7 @@ def isolate_step_data(
         stim,
     )
 
-    if opt.balance_trial_types:
+    if balance_trial_types:
         data_spikes, data_jaw, session_info = balance_trial_type(
             data_spikes,
             data_jaw,
@@ -463,12 +471,13 @@ if __name__ == "__main__":
     if pars.config == "none":
         opt = config_pseudodata()
         # opt = config_vahid()
+        get_log_path(opt, "trial")
     else:
         opt = get_opt(os.path.join("configs", pars.config))
+        get_log_path(opt, pars.config)
     import warnings
 
     warnings.filterwarnings("ignore")
-    get_log_path(opt, "trial")
     if opt.verbose:
         print("log_path", opt.log_path)
 

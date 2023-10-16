@@ -335,7 +335,7 @@ if __name__ == "__main__":
         "pEI": 0.8,
         "variation": 1,
     }
-    for i in [108]:
+    for i in [20, 100, 200]:
         conf["onsets"][1] = i
         path = f"datasets/PseudoData_v17_delay{conf['onsets'][1]}_onesession"
         pseudo_data = PseudoData(

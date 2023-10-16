@@ -278,9 +278,10 @@ def reload_weights(training_opt, model, optimizer=None, last_best="last"):
         return model
 
     optim_path = os.path.join(training_opt.log_path, f"{last_best}_optim.ckpt")
-    if not os.path.exists(optim_path):
-        raise ValueError("optimizer not found at " + optim_path)
-    optimizer.load_state_dict(torch.load(optim_path, map_location=training_opt.device))
+    if os.path.exists(optim_path):
+        optimizer.load_state_dict(
+            torch.load(optim_path, map_location=training_opt.device)
+        )
     return model, optimizer
 
 
@@ -289,27 +290,20 @@ def go_back_to_hunting(log_path, last_best="last", lr=None):
     from infopath.model_loader import load_model_and_optimizer
     from infopath.train import train
 
-    if last_best == "last":
-        reload_model_and_optim = True
-        reload_model = False
-    else:
-        reload_model_and_optim = False
-        reload_model = True
     model, netD, optimizerG, optimizerD = load_model_and_optimizer(
-        opt,
-        reload_model_and_optim=reload_model_and_optim,
-        reload_model=reload_model,
-        last_best=last_best,
+        opt, last_best=last_best, reload=True
     )
 
     if lr is not None:
         optimizerG.param_groups[0]["lr"] = lr
-        optimizerD.param_groups[0]["lr"] = lr
+        if optimizerD is not None:
+            optimizerD.param_groups[0]["lr"] = lr
     steps = os.listdir(log_path)
     steps = [int(i.split("_")[-1][:-4]) for i in steps if ".svg" in i]
     steps = max(steps)
-    optimizer_to(optimizerD, opt.device)
     optimizer_to(optimizerG, opt.device)
+    if optimizerD is not None:
+        optimizer_to(optimizerD, opt.device)
     train(opt, model, netD, optimizerG, optimizerD, step=steps)
 
 
