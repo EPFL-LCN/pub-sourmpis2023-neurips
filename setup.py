@@ -1,29 +1,14 @@
-from itertools import dropwhile
-from os import path
 from setuptools import find_packages, setup
-from subprocess import DEVNULL, call
-
-
-def collect_docstring(lines):
-    """Return document docstring if it exists"""
-    lines = dropwhile(lambda x: not x.startswith('"""'), lines)
-    doc = ""
-    for line in lines:
-        doc += line
-        if doc.endswith('"""\n'):
-            break
-
-    return doc[3:-4].replace("\r", "").replace("\n", " ")
 
 
 def meta_data():
     meta = {
-        "version": "0.0.1",
+        "version": "0.1.0",
         "maintainer": "Guillaume Bellec and Christos Sourmpis",
-        "email": "guillaume@bellec.eu",
+        "email": "christos.sourmpis@epfl.ch";"guallaume.bellec@epfl.ch",
         "url": "https://www.epfl.ch/labs/lcn/",
         "license": "Apache 2.0",
-        "description": "Efficient implementation of recurrent spiking neural networks (RSNNs) in PyTorch.",
+        "description": "Code for the publication Sourmpis et al 2023, Neurips in PyTorch.",
     }
 
     return meta
