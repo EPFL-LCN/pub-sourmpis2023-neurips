@@ -17,8 +17,6 @@ class PopRSNN(nn.Module):
         inter_delay=20,
         num_areas=3,
         p_exc=0.85,
-        varied_delay=False,
-        choose_min_delay=True,
         trial_offset=False,
         rec_groups=1,
         latent_space=2,
@@ -62,8 +60,6 @@ class PopRSNN(nn.Module):
             prop_light (float) : probability of one inhibitory neuron has light-activated channels, frac{\DeltaF}{F} > 0.5, actual value from ws1 data 48/105
             sigma_mem_noise (list, optional): noise level per area. Defaults to [0.16, 0.12, 0.12].
             temperature (float, optional): parameter for no deterministic spike_function. Defaults to 7.5.
-            varied_delay (bool, optional): if the delays are varied. Defaults to False.
-            keep_all_input (bool, optional): input projects to all areas (True) input projects only to first (False). Defaults to False.
             restrict_inter_area_inh (bool, optional): inhibitory neurons project to other areas (False). Defaults to False.
             spike_function (str, optional): spike_function. Defaults to "bernoulli".
             train_v_rest (bool, optional): scaling of the noise level with a trained parameter. Defaults to False.
@@ -135,12 +131,13 @@ class PopRSNN(nn.Module):
         self.sigma_mem_noise = sigma_mem_noise[0]
 
         self.inter_delay = int(inter_delay // dt)
-        self.varied_delay = varied_delay
 
         delays = [np.ones(self.latent_size) * (self.inter_delay - self.n_delay)]
-        if (rec_groups == 1) and (not choose_min_delay):
-            delays = [np.zeros(self.latent_size)]
+        assert not (
+            (rec_groups == 1) and (self.inter_delay != self.n_delay)
+        ), "wrong value for the inter_delay"
         if rec_groups > 1:
+            # We split the time in rec_groups
             num_delay = (self.inter_delay - self.n_delay) / (rec_groups - 1)
             delays += [
                 np.ones(self.latent_size) * int(num_delay * i)
@@ -234,7 +231,7 @@ class PopRSNN(nn.Module):
         sample_trial_noise=True,
         seed=None,
     ):
-        spike_buffer, v, jaw_buffer = state[0]
+        spike_buffer, v, jaw_buffer = state
 
         if sample_mem_noise:
             self.sample_mem_noise(input.shape[0], input.shape[1])
@@ -280,7 +277,7 @@ class PopRSNN(nn.Module):
         voltages = torch.stack(voltage_list)
         spikes = torch.stack(spike_list)
 
-        return [spikes], [voltages], [jaw], [state]
+        return spikes, voltages, jaw, state
 
     def step(self, rec_cur, inp_cur, v, mem_noise):
         cur = inp_cur[0] + rec_cur[0]

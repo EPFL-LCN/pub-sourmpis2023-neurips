@@ -134,19 +134,14 @@ def plot_rsnn_activity(
 
     if jaw is not None:
         ax = ax_list[current_ax_index]
-        ax.plot(time_line, jaw[0][:, :5, 0].cpu(), "k")
-        ax.plot(time_line, jaw[1][:, :5, 0].cpu(), "r")
+        ax.plot(time_line, jaw[0][:, :5, 0].cpu().numpy(), "k")
+        ax.plot(time_line, jaw[1][:, :5, 0].cpu().numpy(), "r")
         ax.set_xlim([0, tmax])
         current_ax_index += 1
     ax.set_xlabel("time in ms")
 
     for ax in ax_list:
         strip_right_top_axis(ax)
-        for tick in ax.xaxis.get_major_ticks():
-            tick.label.set_fontsize("small")
-        for tick in ax.yaxis.get_major_ticks():
-            tick.label.set_fontsize("small")
-
     for ax in ax_list[:-2]:
         ax.set_xticks([])
     ax = ax_list[current_ax_index]
@@ -330,10 +325,8 @@ def make_spikes(
         input_spikes = model.trialToSpike(stims)
         if seed is not None:
             torch.manual_seed(seed)
-        model.rnn.cells[0].sample_mem_noise(
-            input_spikes.shape[0], input_spikes.shape[1]
-        )
-        mem_noise = model.rnn.cells[0].mem_noise.clone()
+        model.rsnn.sample_mem_noise(input_spikes.shape[0], input_spikes.shape[1])
+        mem_noise = model.rsnn.mem_noise.clone()
         if seed is not None:
             torch.manual_seed(seed)
         spikes, v, jaw, _ = model.step_with_dt(
@@ -343,7 +336,7 @@ def make_spikes(
             dt=25,
         )
 
-        model.rnn.cells[0].mem_noise = mem_noise
+        model.rsnn.mem_noise = mem_noise
         torch.cuda.empty_cache()
     if return_jaw:
         return stims, input_spikes, [spikes], jaw, [v]
@@ -352,25 +345,21 @@ def make_spikes(
 
 
 def simulation_plots(model, opt):
-    if opt.lsnn_version == "srm":
-        w_rec = (model.rnn.cells[0].conv_rec.weight.cpu().detach() ** 2).mean(2)
-    else:
-        w_rec = model.rnn.cells[0]._w_rec.cpu().detach().clone()
+    w_rec = model.rsnn._w_rec.cpu().detach().clone()
     # w_rec[w_rec > 0.2] = 0.2
     if w_rec.dim() == 3:
-        delays = model.rnn.cells[0].delays
+        delays = model.rsnn.delays
         for i in range(w_rec.shape[0]):
             w_rec_tmp = w_rec[i]
             w_rec_fig, w_rec_ax = plt.subplots()
             delay = ((opt.inter_delay - delays[i] * opt.dt) // opt.dt * opt.dt)[i]
-            #         delay = opt.inter_delay - i*opt.dt
             w_rec_ax.title(f"Delay {delay}")
             w_rec_ax.pcolormesh(w_rec_tmp, cmap=plt.get_cmap("gist_heat_r"))
             w_rec_ax.colorbar()
 
-            areas = model.rnn.cells[0].areas
-            exc = model.rnn.cells[0].excitatory
-            inh = model.rnn.cells[0].inhibitory
+            areas = model.rsnn.areas
+            exc = model.rsnn.excitatory
+            inh = model.rsnn.inhibitory
             for i in range(areas + 1):
                 w_rec_ax.axvline(int(i * exc / areas), color="black")
                 w_rec_ax.axhline(int(i * exc / areas), color="black")
@@ -381,9 +370,9 @@ def simulation_plots(model, opt):
         w_rec_fig, w_rec_ax = plt.subplots()
         w_rec_ax.pcolormesh(w_rec, cmap=plt.get_cmap("gist_heat_r"))
         w_rec_ax.colorbar()
-        areas = model.rnn.cells[0].areas
-        exc = model.rnn.cells[0].excitatory
-        inh = model.rnn.cells[0].inhibitory
+        areas = model.rsnn.areas
+        exc = model.rsnn.excitatory
+        inh = model.rsnn.inhibitory
         for i in range(areas + 1):
             w_rec_ax.axvline(int(i * exc / areas), color="black")
             w_rec_ax.axhline(int(i * exc / areas), color="black")
@@ -391,23 +380,16 @@ def simulation_plots(model, opt):
             w_rec_ax.axhline(exc + int(i * inh / areas), color="black")
 
     w_inp_fig, w_inp_ax = plt.subplots()
-    if opt.lsnn_version == "srm":
-        w_inp = (model.rnn.cells[0].conv_inp.weight.cpu().detach()).mean(2)
-        #     w_inp[w_inp<0] = 0
-        bias = model.rnn.cells[0].conv_inp.bias.cpu().detach()
-        #     w_inp[w_inp<0.5*1e-5] = 0.5*1e-5
-        noise_bias = 1
-    else:
-        w_inp = model.rnn.cells[0]._w_in.cpu().detach()
-        bias = model.rnn.cells[0].v_rest.cpu().detach()
-        noise_bias = model.rnn.cells[0].bias.cpu().detach()
+    w_inp = model.rsnn._w_in.cpu().detach()
+    bias = model.rsnn.v_rest.cpu().detach()
+    noise_bias = model.rsnn.bias.cpu().detach()
 
     w_inp_ax.pcolormesh(w_inp, cmap=plt.get_cmap("gist_heat_r"))
     w_inp_ax.colorbar()
 
-    areas = model.rnn.cells[0].areas
-    exc = model.rnn.cells[0].excitatory
-    inh = model.rnn.cells[0].inhibitory
+    areas = model.rsnn.areas
+    exc = model.rsnn.excitatory
+    inh = model.rsnn.inhibitory
     for i in range(areas + 1):
         w_inp_ax.axhline(int(i * exc / areas), color="black")
         w_inp_ax.axhline(exc + int(i * inh / areas), color="black")
@@ -430,7 +412,7 @@ def simulation_plots(model, opt):
 
     offset_fig, offset_ax = plt.subplots()
     offset_ax.set_title("Trial Offset")
-    trial_offset = model.rnn.cells[0].trial_offset.T.cpu().detach().clone()
+    trial_offset = model.rsnn.trial_offset.T.cpu().detach().clone()
     offset_ax.plot(trial_offset.abs())
     for i in range(areas + 1):
         offset_ax.axvline(int(i * exc / areas), color="black")
@@ -489,8 +471,8 @@ def light_area(light, batch_size, model, area):
         model.opt.n_units, batch_size, light.shape[0], device=device
     )
     light = light.to(model.opt.device)
-    light_source[model.rnn.cells[0].area_index == area, :, :] = light
-    light_source = light_source.permute(2, 1, 0) * 20 * model.rnn.cells[0].base_thr[0]
+    light_source[model.rsnn.area_index == area, :, :] = light
+    light_source = light_source.permute(2, 1, 0) * 20 * model.rsnn.base_thr[0]
     return light_source
 
 
@@ -532,7 +514,7 @@ def show_input_weights_per_area(
 
 
 def input_current_rec(model, spikes, limits_cur, opt, dt=0):
-    w_rec = model.rnn.cells[0]._w_rec.detach().clone()[dt]
+    w_rec = model.rsnn._w_rec.detach().clone()[dt]
     inp_curs = torch.zeros(spikes.shape[0], opt.num_areas * 2, opt.num_areas * 2)
     total_inp_cur = torch.einsum("ij,tbj->tbi", w_rec, spikes)
     for i in range(opt.num_areas * 2):
@@ -829,14 +811,14 @@ def input_currents_over_time_plot(
     opt,
     path="RSNN_Figures/Figure4/",
 ):
-    exc = model.rnn.cells[0].excitatory
-    inh = model.rnn.cells[0].inhibitory
+    exc = model.rsnn.excitatory
+    inh = model.rsnn.inhibitory
     vlimits_exc = [int(i * exc / opt.num_areas) for i in range(opt.num_areas)]
     vlimits_inh = [int(i * inh / opt.num_areas) + exc for i in range(opt.num_areas)]
     vlimits_rec = vlimits_exc + vlimits_inh + [opt.n_units]
     condition = trial_types
     hit, miss = 0, 0
-    for i in range(model.rnn.cells[0]._w_rec.shape[0]):
+    for i in range(model.rsnn._w_rec.shape[0]):
         hit += input_current_rec(
             model, spikes[0][:, condition == 1], vlimits_rec, opt, dt=i
         )

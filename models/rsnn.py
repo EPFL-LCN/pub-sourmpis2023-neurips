@@ -83,7 +83,6 @@ class RSNN(nn.Module):
             prop_light (float, optional): Probability of a neuron being opto sensitive. Defaults to 0.51.
             sigma_mem_noise (list, optional): Strength of gaussian membrane noise as a ratio of (v_thr-v_rest) distance. Defaults to [0.1, 0.1, 0.1].
             temperature (int, optional): Temperature of the sigmoid, when the spike function is "bernoulli". Defaults to 15.
-            choose_min_delay (bool, optional): _description_. Defaults to True.
             restrict_inter_area_inh (bool, optional): _description_. Defaults to True.
             spike_function (str, optional): String of the possible spike_functions {"bernoulli", "deterministic"}. Defaults to "bernoulli".
             train_v_rest (bool, optional): Whether to train the v_rest. Defaults to False.

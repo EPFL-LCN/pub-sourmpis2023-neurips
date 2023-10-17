@@ -121,10 +121,6 @@ def get_default_opt():
         "l1_decay": 0.01,
         #  how many neurons
         "n_units": 300,
-        # what kind of rnn
-        "rnn_type": "rsnn",
-        # Name of task (for readable logs)
-        "task": "brain_encoding",
         # Number of training steps
         "n_steps": 100000,
         # start in seconds relative to onset
@@ -157,45 +153,32 @@ def get_default_opt():
         "noise_level_list": [0.16, 0.16, 0.16],
         # timeconstant of membrane potential of areas in ms
         "tau_list": [10.0, 10.0, 10.0],
-        # timeconstant of synaptic condactunce of areas in ms
-        "tau_syn_list": [2.0, 2.0, 2.0],
         # timeconstant of adaptative threshold in ms
         "tau_adaptation": 144.0,
         # name of areas
         "areas": ["wS1", "mPFC", "tjM1"],
         # delay from input to rnn in seconds
         "thalamic_delay": 0.005,
-        # synaptic delay for intra area
+        # smallest synaptic delay
         "n_delay": 5,
-        # synaptic delay for inter area
+        # longest synaptic delay
         "inter_delay": 5,
         # more readable way to set stim
         "stim": [1, 2, 3, 4],
         # gauss std for filtering spikes beforer loss calculation in ms
         "spike_filter_std": 5,
-        # if input_with_state then augment input with state features e.g. water capacity and time else dont
-        "input_with_state": 0,
         # if verbose print all messages else no
         "verbose": 1,
         # percentage of hidden neurons(neurons that do not correspond to recordings)
         "hidden_perc": 0.0,
-        # if train_per_group average per area and exc/inh population and then calculate loss else no average
-        "train_per_group": 1,
-        # probability a spike to transmitt to the other areas
         # ratio of exc to inh membrane timeconstant
         "exc_inh_tau_mem_ratio": 2.0,
-        # ratio of exc to inh synaptic timeconstant
-        "exc_inh_tau_syn_ratio": 1.0,
-        # original runs jit_EI_LSNN_areas, simplified runs EI_LSNN_simplified
-        "lsnn_version": "original",
+        # simplified runs {rsnn.py}, mean runs pop_mean.py
+        "lsnn_version": "simplified",
         # start and endpoint for reaction_time limits defaults none values
         "reaction_time_limits": None,
-        # if varied_delay then varie the delays for inter area connections from n_delay to n_inter_delay with 10 ms intervals
-        "varied_delay": 0,
         # number of weight groups
         "rec_groups": 1,
-        # if keep_all_input then input goes to all areas else only to first area
-        "keep_all_input": 0,
         # seed the training
         "seed": 0,
         # loss over single neuron or first averaging over population
@@ -207,27 +190,12 @@ def get_default_opt():
         "loss_firing_rate": 1,
         # simple loss, small experiment
         "simple_loss": 0,
-        # change mapping
-        "change_mapping": 0,
         # restrict inter inh->exc connections
         "restrict_inter_area_inh": 1,
-        # size of filter (to find size in ms you need to multiply * dt)
-        "filter_size": 20,
         # propability a neuron to be adaptive
         "prop_adaptive": 0.0,
-        # step decay optimizer sheduler, every 500 steps
-        "step_decay": 5000,
-        # step decay multiplier sheduler
-        "step_multiplier": 0.5,
-        # spike function type {"bernoulli", "poisson", "deterministic"}
+        # spike function type {"bernoulli", "deterministic"}
         "spike_function": "bernoulli",
-        # data load version, either the spike times version(2) or the raster version (1)
-        "load_version": 2,
-        # constrain mapping in area and excitatory-inhibitory population
-        "constrain_on_area": False,
-        "constrain_on_exc": True,
-        # if False there is different synaptic transmission delay for intra and inter area synapses
-        "no_inter_intra": False,
         # train bias (offset in the v_{rest})
         "train_bias": False,
         # train bias(a multiplicative factor in the membrane noise)
@@ -246,50 +214,64 @@ def get_default_opt():
         "p_exc": 0.85,
         # maximum iteration before stopping the early stopping
         "early_stop": 2000,
-        "input_timesteps": 1,
+        # if the neuron model is LIF or conductance based
         "conductance_based": False,
+        # if the T_trial is area specific
         "trial_loss_area_specific": True,
-        "coeff_trial_fr_loss": 0,
+        # if to use sinkhorn loss or hungarian algorithm
         "geometric_loss": False,
-        "resample": 0.02,
-        "choose_min_delay": True,
-        "new_version": False,
+        # second filtering to build the T_trial, stride length in ms
+        "resample": 2,
+        # which areas project to motor decoder
         "motor_areas": [],
-        "jaw_neurons": 100,
+        # maximum delay for neural activity to generate jaw/tongue
         "jaw_delay": 40,
+        # min delay for neural activity to generate jaw/tongue
         "jaw_min_delay": 12,
+        # timeconstant of jaw/tongue integration in ms
         "tau_jaw": 100,
-        "mean_fr": 5,
-        "jaw_version": 0,
+        # which trial types to load from the data
         "trial_types": [0, 1, 2, 3],
-        "pca_features": False,
-        "n_pca_comp": 5,
-        "train_with_jaw": False,
+        # temperature for sigmoid in bernoulli spike function
         "temperature": 7.5,
+        # if to use the MLP trial offset (this the one described in the paper)
         "latent_new": False,
+        # if to load the data with behaviour
         "with_behaviour": False,
-        "loss_trial_type": False,
-        "session_based": False,
+        # if to z-score T_neuron and T_trial
         "z_score": True,
+        # if to use task-splitter
         "with_task_splitter": False,
+        # if jaw/tongue feeds back to the RSNN
         "jaw_open_loop": False,
-        "motor_buffer_size": 40,
+        # if to use jaw or tongue
         "jaw_tongue": 1,
+        # if to use a nonlinear transformation for jaw/tongue
         "jaw_nonlinear": False,
+        # if to scale the jaw/tongue in the model
         "scaling_jaw_in_model": False,
+        # if to balance the trial types based on the recordings
         "balance_trial_types": False,
+        # if to use T_trial with a GAN, what we call spikeT-GAN
         "t_trial_gan": True,
+        # if to use the trial-matched MLE loss
         "loss_trial_matched_mle": False,
+        # if to use logits or spikes
         "use_logits": False,
+        # what are the stimuli onsets in seconds
         "stim_onsets": [0, 1],
+        # percentage of exc neurons in input neurons
         "p_exc_in": 0.8,
+        # what is the initial v_{rest} values
         "v_rest": 0,
+        # what is the initial threshold values
         "thr": 0.1,
+        # if to bound the trial offset
         "trial_offset_bound": False,
+        # if to bound the v_{rest}
         "v_rest_bound": False,
-        "weights_distance_based": False,
+        # how many populations per area to use in PopRSNN
         "pop_per_area": 1,
-        "trial_mle_with_vae": False,
     }
 
     default["time"] = time.ctime()
@@ -304,7 +286,6 @@ def get_default_opt():
 def config_pseudodata():
     opt = get_default_opt()
     opt.datapath = "./datasets/PseudoData_v17_delay108_onesession"
-    opt.load_version = 2
     opt.areas = ["area1", "area2"]
     opt.stim = [4]
     opt.num_areas = len(opt.areas)
@@ -313,15 +294,13 @@ def config_pseudodata():
     opt.n_rnn_in = 2
     opt.start, opt.stop = -0.1, 0.4
     opt.batch_size = 200
-    opt.no_inter_intra = True
     opt.train_bias = True
     opt.train_noise_bias = True
     opt.train_adaptation = False
     opt.prop_adaptive = 0.0
     opt.noise_level_list = [0.1 for i in range(len(opt.areas))]
     opt.input_f0 = 5
-    # opt.lsnn_version = "srm"
-    opt.lsnn_version = "simplified"
+    opt.lsnn_version = "mean"  # "mean"
     opt.thalamic_delay = 0.004  # * (opt.lsnn_version != "srm")
     opt.tau_list = [10 for i in range(opt.num_areas)]
     opt.exc_inh_tau_mem_ratio = 3.0
@@ -332,7 +311,6 @@ def config_pseudodata():
     opt.n_delay = 2
     opt.inter_delay = 4
     opt.rec_groups = 2
-    opt.input_filter_size = 1
     opt.spike_filter_std = 12  # miliseconds # int(spike_filter_std / opt.dt)
 
     opt.trial_offset = False
@@ -356,29 +334,21 @@ def config_pseudodata():
     opt.w_decay = 0.0
     opt.l1_decay = 0.0
 
-    opt.keep_all_input = 1
-    opt.change_mapping = 0
     opt.lr = 0.001
     opt.p_exc = 0.8
     opt.p_exc_in = 1
-    opt.input_timesteps = 1
     opt.trial_loss_area_specific = True
     opt.geometric_loss = True
     opt.resample = 2
-    opt.new_version = True
     opt.motor_areas = []
-    opt.jaw_neurons = 100
     opt.jaw_delay = 40
     opt.tau_jaw = 50
-    opt.mean_fr = 5
     opt.jaw_version = 1
 
     opt.conductance_based = False
     opt.gan_hidden_neurons = 128
     opt.spike_function = "bernoulli"
     opt.trial_types = [0, 1]
-    opt.pca_features = False
-    opt.n_pca_comp = 5
     opt.with_behaviour = False
     opt.loss_trial_type = False
     opt.with_task_splitter = False
@@ -390,7 +360,6 @@ def config_pseudodata():
     opt.thr = 0.1  # -50  #
     opt.trial_offset_bound = False
     opt.v_rest_bound = False
-    # opt.weights_distance_based = True
     opt.trial_mle_with_vae = False
     opt.num_areas = len(opt.areas)
 
@@ -408,7 +377,6 @@ def config_vahid():
     opt.n_units = 1500
     opt.n_rnn_in = 2
     opt.start, opt.stop = -0.2, 1.2
-    opt.load_version = 2
     opt.noise_level_list = [0.10 for i in range(len(opt.areas))]
     opt.balance_trial_types = False
 
@@ -420,9 +388,6 @@ def config_vahid():
     opt.inter_delay = 4  # miliseconds
     opt.n_delay = 2
     opt.rec_groups = 1
-    opt.weights_distance_based = True
-    opt.choose_min_delay = True
-    opt.input_filter_size = 1
 
     opt.spike_filter_std = 12  # miliseconds # int(spike_filter_std / opt.dt)
     opt.lsnn_version = "simplified"
@@ -446,29 +411,23 @@ def config_vahid():
 
     opt.trial_offset = False
     opt.latent_space = 5
-    opt.no_inter_intra = True
     opt.train_noise_bias = True
     opt.train_adaptation = False
     opt.train_bias = True
-    opt.change_mapping = False
     opt.spike_function = "bernoulli"
     opt.w_decay = 0.0
     opt.l1_decay = 0.0
 
     opt.exc_inh_tau_mem_ratio = 3.0
-    opt.keep_all_input = 1
     opt.conductance_based = False
     opt.trial_loss_area_specific = True
     opt.geometric_loss = True
     opt.resample = 2  # stride of already filtered signal
-    opt.new_version = True
 
     opt.motor_areas = [4, 5]
-    opt.jaw_neurons = 100
     opt.jaw_delay = 40
     opt.jaw_min_delay = 12
     opt.tau_jaw = 50
-    opt.mean_fr = 5
     opt.jaw_version = 1
 
     opt.gan_loss = False
@@ -481,7 +440,6 @@ def config_vahid():
     opt.z_score = True
     opt.jaw_open_loop = True
     opt.scaling_jaw_in_model = True
-    opt.motor_buffer_size = 40
     opt.jaw_tongue = 1
     opt.jaw_nonlinear = False
     opt.temperature = 7.5

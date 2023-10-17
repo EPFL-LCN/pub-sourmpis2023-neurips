@@ -18,7 +18,7 @@ def get_log_path(opt, model_path=""):
         os.mkdir(root_path)
     now = datetime.datetime.now()
     log_time = now.strftime("%Y_%-m_%-d_%-H_%-M_%-S")
-    log_time += "_" + opt.task + "_" + model_path
+    log_time += "_" + model_path
     full_path = os.path.join(root_path, log_time)
     os.mkdir(full_path)
     opt.log_path = full_path
@@ -211,13 +211,11 @@ def plot_save_weight_matrix(model, opt, step, save_all_matrices):
     exc = model.rsnn.excitatory
     inh = model.rsnn.inhibitory
     num_areas = opt.num_areas
-    groups = opt.no_inter_intra * opt.rec_groups + (opt.no_inter_intra == 0)
-    if opt.lsnn_version == "srm":
-        groups = 1
+    groups = opt.rec_groups
     fig, ax = plt.subplots(groups, 1)
-    if opt.no_inter_intra and groups == 1 and opt.lsnn_version != "srm":
+    if groups == 1:
         w_rec = w_rec[0]
-    if opt.no_inter_intra and groups > 1:
+    if groups > 1:
         for g in range(groups):
             im = ax[g].pcolormesh(w_rec[g], cmap=plt.get_cmap("gist_heat_r"))
             for i in range(num_areas):
