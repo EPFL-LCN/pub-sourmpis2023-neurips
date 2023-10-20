@@ -5,7 +5,7 @@ def meta_data():
     meta = {
         "version": "0.1.0",
         "maintainer": "Guillaume Bellec and Christos Sourmpis",
-        "email": "christos.sourmpis@epfl.ch";"guallaume.bellec@epfl.ch",
+        "email": "christos.sourmpis@epfl.ch; guallaume.bellec@epfl.ch",
         "url": "https://www.epfl.ch/labs/lcn/",
         "license": "Apache 2.0",
         "description": "Code for the publication Sourmpis et al 2023, Neurips in PyTorch.",
@@ -40,7 +40,7 @@ def setup_package():
         install_requires=[
             "mat73==0.58",
             "matplotlib==3.8.0",
-            "numpy==1.24.0",
+            "numpy==1.21.1",
             "pandas==2.0.2",
             "scikit-learn==0.24.2",
             "scipy==1.8.0",
@@ -48,6 +48,7 @@ def setup_package():
             "torchvision==0.13.1",
             "tqdm==4.64.1",
             "tsne-torch==1.0.1",
+            "numba==0.55.1",
             "umap==0.1.1",
             "umap-learn==0.5.3",
             "geomloss==0.2.5",
