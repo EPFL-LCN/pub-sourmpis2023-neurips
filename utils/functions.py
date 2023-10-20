@@ -470,7 +470,6 @@ def load_data(model):
 
     (
         data_spikes_train,
-        _,
         data_jaw_train,
         session_info_train,
     ) = dataset.get_train_trial_type(
@@ -478,7 +477,6 @@ def load_data(model):
     )
     (
         data_spikes_test,
-        _,
         data_jaw_test,
         session_info_test,
     ) = dataset.get_train_trial_type(
