@@ -23,7 +23,6 @@ class TrialDataset:
         with_behaviour=False,
         timestep=0.001,
         random_seed=1,
-        start_pre=0.3,
         train_perc=0.75,
     ):
         """Generate the pytorch dataset class for our data. The class loads the data we require based on the
@@ -43,7 +42,6 @@ class TrialDataset:
             with_behaviour (bool, optional): If with_behaviour load also behaviour traces. Defaults to False.
             timestep (float, optional): Timestep. Defaults to 0.001.
             random_seed (int, optional): Random seed. Defaults to 1.
-            start_pre (float, optional): We make a small 2nd dataset before start time in order to run the network freely for initialization. Defaults to 0.3.
             train_perc (float, optional): The percentage of train trials. For evaluation, we split the trials in train and test. Defaults to 0.75.
         """
         self.path_ = root
@@ -57,10 +55,6 @@ class TrialDataset:
         self.stop = int(np.round((stop + self.trial_onset) / self.timestep))
         self.relative_start = start
         self.relative_stop = stop
-        # the start_pre is the time that we let the network to find a steady state
-        self.start_pre = int(
-            max(0, (start - start_pre + self.trial_onset)) / self.timestep
-        )
         self.with_behaviour = with_behaviour
         self.sessions = sessions
         self.areas = areas
@@ -85,9 +79,7 @@ class TrialDataset:
             "stims": [[] for _ in range(num_sessions)],
             "reaction_time": [[] for _ in range(num_sessions)],
             "spikes": [[] for _ in range(num_sessions)],
-            "spikes_pre": [[] for _ in range(num_sessions)],
             "behaviour": [[] for _ in range(num_sessions)],
-            "behaviour_pre": [[] for _ in range(num_sessions)],
             "time": [[] for _ in range(num_sessions)],
             "train_ind": [[] for _ in range(num_sessions)],
             "test_ind": [[] for _ in range(num_sessions)],
@@ -154,18 +146,13 @@ class TrialDataset:
         )
         # init arrays with trials
         time_dur = self.stop - self.start
-        time_dur_pre = self.start - self.start_pre
         spikes = np.zeros((trial_info.shape[0], neurons.sum(), time_dur))
         spikes = spikes.astype(np.float32)
-        spikes_pre = np.zeros((trial_info.shape[0], neurons.sum(), time_dur_pre))
-        spikes_pre = spikes_pre.astype(np.float32)
         if self.with_behaviour:
             behaviour = np.zeros((trial_info.shape[0], 3, time_dur))
             behaviour = behaviour.astype(np.float32)
-            behaviour_pre = np.zeros((trial_info.shape[0], 3, time_dur_pre))
-            behaviour_pre = behaviour_pre.astype(np.float32)
         else:
-            behaviour, behaviour_pre = [], []
+            behaviour = []
 
         # load data into array with dimensions Trials x Neurons x Time
         whisker_paths = trial_info.whisker_angle.values
@@ -174,12 +161,10 @@ class TrialDataset:
         trials = []
         for i, trial_onset in enumerate(trial_onsets):
             start = int(np.round((trial_onset) / self.timestep)) + self.start
-            start_pre = start - int(np.round(0.3 / self.timestep))
             stop = start + (self.stop - self.start)
             if raster[start:stop].shape[0] < stop - start:
                 break
             spikes[i] = raster[start:stop].toarray().T
-            spikes_pre[i] = raster[start_pre:start].toarray().T
             if self.with_behaviour:
                 dt_orig = 2  # the camera has 500 fps
                 dt = int(self.timestep * 1000)  # in ms
@@ -191,9 +176,6 @@ class TrialDataset:
                 jaw = sig.resample_poly(jaw, dt_orig, dt)
                 tongue = sig.resample_poly(tongue, dt_orig, dt)
                 behaviour[i] = np.vstack([wh, jaw, tongue])[:, self.start : self.stop]
-                behaviour_pre[i] = np.vstack([wh, jaw, tongue])[
-                    :, self.start_pre : self.start
-                ]
                 if np.isnan(behaviour[i].sum()):
                     continue
             trials.append(i)
@@ -205,13 +187,10 @@ class TrialDataset:
         self.data_dict["stims"][num_session] = stims[trials]
         self.data_dict["reaction_time"][num_session] = reaction_time[trials]
         self.data_dict["spikes"][num_session] = spikes[trials]
-        self.data_dict["spikes_pre"][num_session] = spikes_pre[trials]
         if self.with_behaviour:
             self.data_dict["behaviour"][num_session] = behaviour[trials]
-            self.data_dict["behaviour_pre"][num_session] = behaviour_pre[trials]
         else:
             self.data_dict["behaviour"][num_session] = behaviour
-            self.data_dict["behaviour_pre"][num_session] = behaviour_pre
 
     def max_trials(self, train=2, trial_type=[0, 1, 2, 3]):
         """Find the max trials of a session in the training or/and testing set
@@ -248,12 +227,10 @@ class TrialDataset:
         n_units = self.neurons.shape[0]
         sessions = self.data_dict["sessions"]
         timefull = self.stop - self.start
-        timepre = self.start - self.start_pre
         # for convenience we put the data from all sessions in a big tensor
         # where if data are missing are replaced with nans
         trials = self.max_trials()
         self.spikes_all = torch.ones(timefull, trials, n_units) * torch.nan
-        self.spikes_all_pre = torch.ones(timepre, trials, n_units) * torch.nan
         if self.with_behaviour:
             self.jaw = torch.ones(timefull, trials, len(sessions)) * torch.nan
             self.tongue = torch.ones(timefull, trials, len(sessions)) * torch.nan
@@ -268,15 +245,12 @@ class TrialDataset:
             spikes = torch.tensor(self.data_dict["spikes"][index][indices])
             spikes = spikes.permute(2, 0, 1)
             trials = spikes.shape[1]
-            spikes_pre = torch.tensor(self.data_dict["spikes_pre"][index][indices])
-            spikes_pre = spikes_pre.permute(2, 0, 1)
             self.session_info[0].append(self.data_dict["trial_types"][index][indices])
             self.session_info[1].append(self.data_dict["stims"][index][indices])
             self.session_info[2].append(self.data_dict["trial_active"][index][indices])
             self.session_info[3].append(self.data_dict["neurons"][index])
 
             self.spikes_all[:, :trials, self.session_info[3][-1]] = spikes
-            self.spikes_all_pre[:, :trials, self.session_info[3][-1]] = spikes_pre
             if self.with_behaviour:
                 self.jaw[:, :trials, i] = torch.tensor(
                     self.data_dict["behaviour"][index][indices, 1].T
@@ -309,15 +283,13 @@ class TrialDataset:
             jaw_tongue (int, optional): If 1 then it uses the jaw, if 2 the tongue. Defaults to 1.
 
         Returns:
-            [spikes, spikes_pre, jaw, session_info]: _description_
+            [spikes, jaw, session_info]: _description_
         """
         assert jaw_tongue in [1, 2], "wrong jaw_tongue value"
         sessions = self.data_dict["sessions"]
         timefull, _, n_units = self.spikes_all.shape
-        timepre, _, n_units = self.spikes_all_pre.shape
         max_trials = self.max_trials(train, trial_type=trial_type)
         spikes = torch.zeros(timefull, max_trials, n_units) * torch.nan
-        spikes_pre = torch.zeros(timepre, max_trials, n_units) * torch.nan
         jaw = None
         if self.with_behaviour:
             jaw = torch.zeros(timefull, max_trials, len(sessions)) * torch.nan
@@ -343,9 +315,6 @@ class TrialDataset:
             spikes[:, :trials, sess_neurons] = self.spikes_all[:, indices][
                 ..., sess_neurons
             ]
-            spikes_pre[:, :trials, sess_neurons] = self.spikes_all_pre[:, indices][
-                ..., sess_neurons
-            ]
             if self.with_behaviour:
                 if jaw_tongue == 1:
                     tmp = self.jaw[:, indices][..., session]
@@ -357,7 +326,6 @@ class TrialDataset:
                 new_session_info[i].append(self.session_info[i][session][indices])
         return (
             spikes.to(device),
-            spikes_pre.to(device),
             jaw,
             new_session_info,
         )
