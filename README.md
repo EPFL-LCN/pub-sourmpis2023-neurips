@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10006599.svg)](https://doi.org/10.5281/zenodo.10006599)
+
 # Trial matching code
 
 This is the code for the publication:
