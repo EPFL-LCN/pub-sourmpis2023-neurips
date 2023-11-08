@@ -122,7 +122,9 @@ class FullModel(nn.Module):
                 model_jaw = torch.exp(model_jaw) - 1
         return spike_outputs, voltages, model_jaw, state
 
-    def forward(self, stims):
+    def forward(self, stims, seed=None):
+        if seed is not None:
+            torch.manual_seed(seed)
         self.opt.batch_size = stims.shape[0]
         state = self.steady_state()
         input_spikes = self.input_spikes(stims)

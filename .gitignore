@@ -8,3 +8,7 @@ rsnn.egg-info*
 **.DS_Store
 configs/**
 log_dir/4e8975de7db30117ea8fde6d418305e049ddc1eb**
+log_dir/c5b25**
+datasets/ModelData/**
+par_rec_comp
+Figures/lfads_rates_*
