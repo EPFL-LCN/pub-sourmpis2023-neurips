@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 import json
+from tqdm import tqdm
 
 
 def make_onset_timeseries(time, length):
@@ -97,8 +98,12 @@ class PseudoData:
             print("path exists rewriting")
         else:
             os.mkdir(self.path)
+        print(f"Generating dataset {self.path.split('/')[-1]}")
+        print("Generating cluster info")
         self.make_cluster_info()
+        print("Generating trial info")
         self.make_trial_info()
+        print("Generating spikes")
         self.make_spikes()
 
     def make_cluster_info(self):
@@ -141,7 +146,8 @@ class PseudoData:
             )
             # where PS stands for PseudoSession
             session_path = "PS{:03d}_20220404".format(sess)
-            os.mkdir(os.path.join(self.path, session_path))
+            if not os.path.exists(os.path.join(self.path, session_path)):
+                os.mkdir(os.path.join(self.path, session_path))
             os.mkdir(os.path.join(self.path, session_path, areas[0]))
             if len(areas) > 1:
                 os.mkdir(os.path.join(self.path, session_path, areas[1]))
@@ -231,7 +237,8 @@ class PseudoData:
         sessions = os.listdir(self.path)
         sessions = [sess for sess in sessions if sess != "cluster_information"]
         clusters = pd.read_csv(os.path.join(self.path, "cluster_information"))
-        for i, sess in enumerate(sessions):
+        for i in tqdm(range(len(sessions)), desc="session"):
+            sess = sessions[i]
             trial_info = pd.read_csv(os.path.join(self.path, sess, "trial_info"))
             trial_types = trial_info.trial_type.values
             session_path = os.path.join(self.path, sess)
@@ -241,26 +248,33 @@ class PseudoData:
             # area2 responds only in Hit trials
             area2 = (area2.T * (trial_types == "Hit")).T
             # neurons can be positive, negative or no modulated by the stimulus
-            modulation = np.random.choice(
+            spike_times = [[] for _ in range(cluster.shape[0])]
+            modulation_area2 = np.random.choice(
                 self.mod_strength, cluster.shape[0], p=self.mod_prob
             )
-            area2 = area2[..., None] @ modulation[None] + 1
-            modulation = np.random.choice(
+            modulation_area1 = np.random.choice(
                 self.mod_strength, cluster.shape[0], p=self.mod_prob
             )
-            area1 = area1[..., None] @ modulation[None]
-            modulation = np.random.choice(
-                self.mod_strength, cluster.shape[0], p=self.mod_prob
-            )
-            area1 = area1 + 1
-            area1[area1 < 0] = 0
-            rates = area1 * (areas == "area1") + area2 * (areas == "area2")
-            rates *= cluster.firing_rate.values
-            threshold = np.random.rand(rates.shape[0], rates.shape[1], rates.shape[2])
-            spikes = (rates * self.timestep / 1000) > threshold
+            time = 0
+            for trial in range(self.trials_per_session):
+                area2_t = area2[trial, :, None] @ modulation_area2[None] + 1
+                area1_t = area1[trial, :, None] @ modulation_area1[None] + 1
+                area1_t[area1_t < 0] = 0
+                rates = area1_t * (areas == "area1") + area2_t * (areas == "area2")
+                rates *= cluster.firing_rate.values
+                threshold = np.random.rand(rates.shape[0], rates.shape[1])
+                spikes = (rates * self.timestep / 1000) > threshold
+                spike_tms, spike_neurons = np.where(spikes)
+                for n in range(len(spike_times)):
+                    spike_times[n] += (
+                        spike_tms[spike_neurons == n] / 1000 + time
+                    ).tolist()
+                time += self.length / 1000
+
             for cl in range(cluster.shape[0]):
-                spike_times = np.where(spikes[:, :, cl].flatten())[0] / 1000
-                np.save(os.path.join(session_path, f"neuron_index_{cl}"), spike_times)
+                np.save(
+                    os.path.join(session_path, f"neuron_index_{cl}"), spike_times[cl]
+                )
 
     def trial_prototypes(self):
         """Generate the population average activity of every area for every trial."""
@@ -335,7 +349,7 @@ if __name__ == "__main__":
         "pEI": 0.8,
         "variation": 1,
     }
-    for i in [20, 100, 200]:
+    for i in [20, 200]:
         conf["onsets"][1] = i
         path = f"datasets/PseudoData_v17_delay{conf['onsets'][1]}_onesession"
         pseudo_data = PseudoData(
