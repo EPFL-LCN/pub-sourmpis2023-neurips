@@ -24,6 +24,7 @@ We suggest installing the code with conda and you can do this in the following w
 
 ```bash
 conda create --name trial-match python=3.9.5
+conda activate trial-match
 pip install -e .
 ```
 Now you should be able to run the code.
@@ -114,7 +115,7 @@ The code is sufficient in order to generate all the figures of the paper, in the
 
 ## Training the RSNN model
 
-Training models will require a little bit better understanding of the code, HOWEVER, you can train the main model with the following command, and you can start exploring the parameters, by changing the options in the file configs/main_model/opt.json:
+Training models will require a little bit better understanding of the code. However, you can train the main model with the following command, and you can start exploring the parameters, by changing the options in the file configs/main_model/opt.json:
 
 ```bash
 python3 infopath/train.py --config=main_model
