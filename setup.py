@@ -1,5 +1,5 @@
 from setuptools import find_packages, setup
-
+from subprocess import check_call
 
 def meta_data():
     meta = {
@@ -8,13 +8,15 @@ def meta_data():
         "email": "christos.sourmpis@epfl.ch; guallaume.bellec@epfl.ch",
         "url": "https://www.epfl.ch/labs/lcn/",
         "license": "Apache 2.0",
-        "description": "Code for the publication Sourmpis et al 2023, Neurips in PyTorch.",
+        "description": "Data fitting with recurrent spiking neural networks (RSNNs) and trial-matching in PyTorch.",
     }
 
     return meta
 
 
 def setup_package():
+    check_call([sys.executable, '-m', 'pip', 'install', 'numpy==1.21.1'])
+    check_call([sys.executable, '-m', 'pip', 'install', 'torch==1.12.1'])
     with open("README.md") as f:
         long_description = f.read()
     meta = meta_data()
@@ -40,11 +42,9 @@ def setup_package():
         install_requires=[
             "mat73==0.58",
             "matplotlib==3.8.0",
-            "numpy==1.21.1",
             "pandas==2.0.2",
             "scikit-learn==0.24.2",
             "scipy==1.8.0",
-            "torch==1.12.1",
             "torchvision==0.13.1",
             "tqdm==4.64.1",
             "tsne-torch==1.0.1",
