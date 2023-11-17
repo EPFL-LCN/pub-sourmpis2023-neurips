@@ -280,10 +280,10 @@ def train(opt, model, netD, optimizerG, optimizerD, step=-1):
 def t_trial_pearson(filt_data, filt_model, data_jaw, model_jaw, model, session_info):
     with torch.no_grad():
         t_trial_p = trial_metric(
-            filt_data,
-            filt_model,
-            data_jaw,
-            model_jaw,
+            model.filter_fun2(filt_data),
+            model.filter_fun2(filt_model),
+            model.filter_fun2(data_jaw),
+            model.filter_fun2(model_jaw),
             session_info,
             model,
             "pear_corr",

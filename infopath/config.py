@@ -285,13 +285,15 @@ def get_default_opt():
 # # PseudoData
 def config_pseudodata():
     opt = get_default_opt()
-    opt.datapath = "./datasets/PseudoData_v17_delay108_onesession"
+    opt.datapath = "./datasets/PseudoData_v16_variation1ms"
     opt.areas = ["area1", "area2"]
     opt.stim = [4]
     opt.num_areas = len(opt.areas)
 
     opt.n_units = 500
-    opt.n_rnn_in = 2
+    opt.n_rnn_in = 200
+    opt.p_exc_in = 0.8
+
     opt.start, opt.stop = -0.1, 0.4
     opt.batch_size = 200
     opt.train_bias = True
@@ -300,7 +302,7 @@ def config_pseudodata():
     opt.prop_adaptive = 0.0
     opt.noise_level_list = [0.1 for i in range(len(opt.areas))]
     opt.input_f0 = 5
-    opt.lsnn_version = "mean"  # "mean"
+    opt.lsnn_version = "simplified"  # "mean"
     opt.thalamic_delay = 0.004  # * (opt.lsnn_version != "srm")
     opt.tau_list = [10 for i in range(opt.num_areas)]
     opt.exc_inh_tau_mem_ratio = 3.0
@@ -317,7 +319,7 @@ def config_pseudodata():
     opt.latent_space = 5
     opt.latent_new = False
     opt.trial_matching = True
-    opt.gan_loss = True
+    opt.gan_loss = False
     opt.t_trial_gan = True
     opt.loss_trial_matched_mle = 0
     opt.loss_trial_wise = 1
@@ -336,7 +338,6 @@ def config_pseudodata():
 
     opt.lr = 0.001
     opt.p_exc = 0.8
-    opt.p_exc_in = 1
     opt.trial_loss_area_specific = True
     opt.geometric_loss = True
     opt.resample = 2
@@ -486,6 +487,6 @@ if __name__ == "__main__":
 
     default = get_default_opt()
     opt = copy.copy(default)
-    opt = config_pseudodata(opt)
+    opt = config_pseudodata()
 
     save_opt(config_path, opt)

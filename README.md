@@ -13,7 +13,7 @@ Contact:
 ## Glossary
 1) [Installation](#Installation)
 2) [Generate simpler artificial data](#generate-artificial-data)
-3) [Load pre-trained models](#pre-trained-models)
+3) [QuickStart and load pre-trained models](#quickstart-and-pre-trained-models)
 4) [Code snippet for computing the trial-matching loss function](#compute-the-trial-matching-loss-function)
 5) [Download recorded data from Esmaeli et al. 2021](#download-recorded-data)
 6) [Generate paper figures](#generate-figures-from-a-pre-trained-model)
@@ -36,7 +36,9 @@ python datasets/pseudodata.py
 ```
 This will generate the data for Figure 2 and the data for some of the supplementary Figures.
 
-## Pre-trained models 
+## QuickStart and pre-trained models
+
+You can quickly run and explore a trained model in [quick_start.ipynb](quick_start.ipynb).
 
 One can load a pre-trained model as follows.
 
@@ -53,15 +55,21 @@ model = load_model_and_optimizer(opt, reload=True, last_best="last")[0]
 
 For instance, the recurrent weights of the model can be obtained with the following:
 ```python
-model.rsnn._w_rec # shape: 2 x 1500 x 1500
+model.rsnn._w_rec # shape: 2 x 1500 x 1500 (number of delays x output neurons x input neurons)
 ```
+Note: We have two weight matrices, one when the delay is 2 ms and one when the delay is 4 ms.
+
+Here you can see the mean recurrent connectivity:
+![mean recurrent connectivity](weights.png)
 
 To simulate a raster of 400 trials from the model one can do:
 ```python
 with torch.no_grad():
-    stims = torch.randint(2, size=(400,)) # binary vector of conditions (absence or presence of whisker stimulation)
+    stims = torch.randint(2, size=(10,)) # binary vector of conditions (absence or presence of whisker stimulation)
     spikes, voltages, jaw, state = model(stims) # generation of the input spikes and simulation of the RSNN
 ```
+Here you can see the spiking activity of one simulated trial:
+![spiking activity](spikes.png)
 
 ## Compute the trial matching loss-function
 
@@ -70,20 +78,20 @@ Calculate the trial-matching loss with the hard matching (Hungarian Algorithm)
 Args:
 
 
-* filt_data_spikes (torch.tensor): $\mathcal{T}_{trial}(z^\mathcal{D})$, with dimension: K x T
+* pop_avg_data (torch.tensor): $\mathcal{T}_{trial}(z^\mathcal{D})$, with dimension: K x T
 
-* filt_model_spikes (torch.tensor): $\mathcal{T}_{trial}(z)$, with dimension K'  x T
+* pop_avg_model (torch.tensor): $\mathcal{T}_{trial}(z)$, with dimension K'  x T
 
 ```python
-def hard_trial_matching_loss(filt_data_spikes, filt_model_spikes):
+def hard_trial_matching_loss(pop_avg_data, pop_avg_model):
     # Subsample the biggest tensor, so both data and model have the same #trials
-    min_trials = min(filt_model_spikes.shape[0], filt_data_spikes.shape[0])
-    filt_data_spikes = filt_data_spikes[:min_trials] # shape: K x T (assuming K = min(K,K'))
-    filt_model_spikes = filt_model_spikes[:min_trials] # shape: K x T
+    min_trials = min(pop_avg_model.shape[0], pop_avg_data.shape[0])
+    pop_avg_data = pop_avg_data[:min_trials] # shape: K x T (assuming K = min(K,K'))
+    pop_avg_model = pop_avg_model[:min_trials] # shape: K x T
     with torch.no_grad():
-        cost = mse_2d(filt_model_spikes.T, filt_data_spikes.T) # shape: K x K 
+        cost = mse_2d(pop_avg_model.T, pop_avg_data.T) # shape: K x K 
         keepx, ytox = linear_sum_assignment(cost.detach().cpu().numpy()) # keepx and ytox are trial indices
-    return torch.nn.MSELoss()(filt_model_spikes[keepx], filt_data_spikes[ytox])
+    return torch.nn.MSELoss()(pop_avg_model[keepx], pop_avg_data[ytox])
 ```
 
 The function above is in the `infopath/losses.py` file.
@@ -91,6 +99,7 @@ The function above is in the `infopath/losses.py` file.
 You can explore the loss function in a simple demo in [trial_matching_loss_demo.ipynb](trial_matching_loss_demo.ipynb).
 
 ## Download recorded data
+
 Be aware that the full data is ~55GB, but we will use only ~3GB in the end.
 
 In order to use the recorded data you can do it manually 
@@ -114,12 +123,12 @@ The code is sufficient in order to generate all the figures of the paper, in the
 
 ## Training the RSNN model
 
-Training models will require a little bit better understanding of the code. However, you can train the main model with the following command, and you can start exploring the parameters, by changing the options in the file configs/main_model/opt.json:
+Training models will require a little bit better understanding of the code. However, you can train a model to fit the pseudodata with the following command, and you can start exploring the parameters, by changing the options in the file configs/pseudodata/opt.json:
 
 ```bash
-python3 infopath/train.py --config=main_model
+python3 infopath/train.py --config=pseudodata
 ```
-The previous command is supposed to be run on GPU. Be careful that this training will require GPU RAM of at least 40GB. If you want to run it with CPU, you can change the field "device" in the configs/main_model/opt.json.
+The previous command is supposed to be run on GPU. Be careful that this training will require GPU with RAM of at least 5GB. If you want to run it with CPU, you can change the field "device" in the configs/pseudodata/opt.json.
 
 ### Notes
 For the Figure 4C you might notice that the UMAP is not the same as the one with the paper, this happens because we changed the function that generates the input spikes for readability. However, you can appreciate that the message of the main paper remains the same.
