@@ -1,5 +1,7 @@
 from setuptools import find_packages, setup
 from subprocess import check_call
+import sys 
+
 
 def meta_data():
     meta = {
