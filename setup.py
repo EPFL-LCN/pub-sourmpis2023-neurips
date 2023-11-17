@@ -56,6 +56,7 @@ def setup_package():
             "geomloss==0.2.5",
             "seaborn==0.12.0",
             "statannot==0.2.3",
+            "jupyter==1.0.0",
         ],
     )
 
