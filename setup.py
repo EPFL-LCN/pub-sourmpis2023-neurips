@@ -1,6 +1,10 @@
 from setuptools import find_packages, setup
 from subprocess import check_call
+<<<<<<< HEAD
 import sys
+=======
+import sys 
+>>>>>>> 0ee589b2d85410cc044279d06bf93e277f182d87
 
 
 def meta_data():
