@@ -1,5 +1,7 @@
 from setuptools import find_packages, setup
 from subprocess import check_call
+import sys
+
 
 def meta_data():
     meta = {
@@ -7,7 +9,7 @@ def meta_data():
         "maintainer": "Guillaume Bellec and Christos Sourmpis",
         "email": "christos.sourmpis@epfl.ch; guallaume.bellec@epfl.ch",
         "url": "https://www.epfl.ch/labs/lcn/",
-        "license": "Apache 2.0",
+        "license": "MIT",
         "description": "Data fitting with recurrent spiking neural networks (RSNNs) and trial-matching in PyTorch.",
     }
 
@@ -15,8 +17,8 @@ def meta_data():
 
 
 def setup_package():
-    check_call([sys.executable, '-m', 'pip', 'install', 'numpy==1.21.1'])
-    check_call([sys.executable, '-m', 'pip', 'install', 'torch==1.12.1'])
+    check_call([sys.executable, "-m", "pip", "install", "numpy==1.21.1"])
+    check_call([sys.executable, "-m", "pip", "install", "torch==1.12.1"])
     with open("README.md") as f:
         long_description = f.read()
     meta = meta_data()
@@ -33,7 +35,6 @@ def setup_package():
         classifiers=[
             "Intended Audience :: Science/Research",
             "Intended Audience :: Developers",
-            "License :: OSI Approved :: Apache 2.0",
             "Topic :: Scientific/Engineering",
             "Programming Language :: Python",
             "Programming Language :: Python :: 3",
@@ -54,6 +55,7 @@ def setup_package():
             "geomloss==0.2.5",
             "seaborn==0.12.0",
             "statannot==0.2.3",
+            "jupyter==1.0.0",
         ],
     )
 
