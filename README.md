@@ -4,7 +4,7 @@
 
 This is the code for the publication:
 C. Sourmpis, C. Petersen, W. Gerstner & G. Bellec
-[*Trial matching: capturing variability with data-constrained spiking neural networks*](https://neurips.cc/virtual/2023/poster/71974), accepted at NeurIPS 2023.
+[*Trial matching: capturing variability with data-constrained spiking neural networks*](https://openreview.net/forum?id=LAbxkhkjbD), accepted at NeurIPS 2023.
 
 Contact:
 [christos.sourmpis@epfl.ch](mailto:christos.sourmpis@epfl.ch)
