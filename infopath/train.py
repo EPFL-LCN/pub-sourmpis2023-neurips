@@ -494,6 +494,9 @@ if __name__ == "__main__":
         np.random.seed(opt.seed)
 
     # load model
+    if not torch.cuda.is_available():
+        opt.device = "cpu"
+
     dev = opt.device
     opt.device = torch.device("cpu")
     model, netD, optimizerG, optimizerD = load_model_and_optimizer(opt)
