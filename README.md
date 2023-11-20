@@ -102,12 +102,12 @@ You can explore the loss function in a simple demo in [trial_matching_loss_demo.
 
 In order to use the recorded data you can: 
 1. download the spikeData_v9.mat from [here](https://zenodo.org/record/10006599) to the datasets folder 
-2. run the following command:
+2. run the following command, while you are in the directory of this project:
 ```bash
 python3 datasets/datastructure2datasetandvideo_Vahid.py
 ```
 
-or run the following commands:
+or run the following commands, while you are in the directory of this project:
 
 ```bash
 wget https://zenodo.org/record/10006599/files/spikeData_v9.mat -P datasets
