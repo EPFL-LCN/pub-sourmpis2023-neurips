@@ -100,21 +100,18 @@ You can explore the loss function in a simple demo in [trial_matching_loss_demo.
 
 ## Download recorded data
 
-Be aware that the full data is ~55GB, but we will use only ~3GB in the end.
-
-In order to use the recorded data you can do it manually 
-1. download the data from [here](https://zenodo.org/record/4720013), 
-2. unzip 
-3. from the Electrophysiology folder keep the spike_data_v9.mat 
-4. put the spike_data_v9.mat in the datasets folder 
+In order to use the recorded data you can: 
+1. download the spike_data_v9.mat from [here](https://zenodo.org/record/10006599) to the datasets folder 
+2. run the following command:
+```bash
+python3 datasets/datastructure2datasetandvideo_Vahid.py
+```
 
 or run the following commands:
 
 ```bash
-wget https://zenodo.org/record/4720013/files/Esmaeili_data_code.zip -P datasets
-unzip datasets/Esmaeili_data_code.zip -d tmp
-mv tmp/Electrophysiology/Data/spikeData_v9.mat datasets/spikeData_v9.mat
-rm -r tmp
+wget https://zenodo.org/record/10006599/files/Esmaeili_data_code.zip -P datasets
+python3 datasets/datastructure2datasetandvideo_Vahid.py
 ```
 
 ## Generate figures from a pre-trained model
@@ -140,7 +137,7 @@ You can cite us with the following bibtex:
     sourmpis2023trialmatching,
     title     = {Trial matching: capturing variability with data-constrained spiking neural networks},
     author    = {Sourmpis, Christos and Petersen, Carl C H and Gerstner, Wulfram and Bellec, Guillaume},
-    journal   = {Advances in Neural Information Processing Systems},
+    journal   = {Thirty-seventh Conference on Neural Information Processing Systems},
     year      = {2023}
 }
 ```
@@ -152,5 +149,9 @@ and here is the citation for the data:
     author    = {Esmaeili, Vahid and Tamura, Keita and Muscinelli, Samuel P and Modirshanechi, Alireza and Boscaglia, Marta and Lee, Ashley B and Oryshchuk, Anastasiia and Foustoukos, Georgios and Liu, Yanqi and Crochet, Sylvain and Petersen, Carl C.H.},
     journal   = {Neuron},
     year      = {2021},
+    volume    = {109},
+    number    = {13},
+    pages     = {2183--2201},
+    doi       = {https://doi.org/10.1016/j.neuron.2021.05.005}
 }
 ```
