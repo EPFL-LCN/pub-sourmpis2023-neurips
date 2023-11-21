@@ -169,7 +169,10 @@ def unified_cluster_table(path="datasets/DataFromVahid_expert"):
         dirs.remove("cluster_information")
     df_entry = {}
     for dir in dirs:
-        df = pd.read_csv(os.path.join(path, dir, "cluster_info"))
+        try:
+            df = pd.read_csv(os.path.join(path, dir, "cluster_info"))
+        except:
+            pass
         df_entry = pd.DataFrame(columns=cluster_information.columns)
         df_entry["session"] = [dir]
         df.neuron_index = df.index.values
