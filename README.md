@@ -128,7 +128,7 @@ python3 infopath/train.py --config=pseudodata
 The previous command is supposed to be run on GPU. Be careful that this training will require GPU with RAM of at least 5GB. If you want to run it with CPU, you can change the field "device" in the configs/pseudodata/opt.json.
 
 ### Notes
-1. For the Figure 4C you might notice that the UMAP is not the same as the one with the paper, this happens because we changed the function that generates the input spikes for readability. However, you can appreciate that the message of the main paper remains the same.
+1. For Figures 3-4 you might notice that that they are not identical to the ones in the paper, this happens because we changed the function that generates the input spikes for readability. However, you can appreciate that the message of the main paper remains the same.
 2. When we tried to reproduce Figure 4C in a different OS (our default is Ubuntu), we observed very minor differences in the position of the clusters (the clusters are qualitatively the same). This can lead to the boxes not being in the correct location and Figure 4D is not plotted correctly (you might need to modify the box location). 
 
 ### Citation 
