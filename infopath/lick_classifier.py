@@ -26,11 +26,11 @@ def prepare_classifier(
     device,
     remove_mean=False,
 ):
+    torch.manual_seed(0)
     lick_classifier = Lick_Classifier(filt_jaw_train.shape[0], 128)
     optimizer = torch.optim.AdamW(
         lick_classifier.parameters(), lr=1e-4, weight_decay=0.1
     )
-    torch.manual_seed(0)
     lick_classifier.to(device)
     num_session = filt_jaw_train.shape[2]
     pbar = tqdm(range(150))
